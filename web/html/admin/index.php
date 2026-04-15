@@ -139,11 +139,11 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 }
 
 if ( ($foundMember && $foundStudent && ! $foundEmployee) ||
-     (! $foundMember && !$foundAffiliate)
+     (! $foundMember && !$foundAffiliate && !$foundEmployee)
    ) {
   $errors .=
       'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
-  $errors .= ' of either <b>employee</b> or <b>staff</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+  $errors .= ' of either <b>employee</b> or <b>staff</b> + <b>member</b>, or one of <b>affiliate</b>, <b>employee</b>, <b>staff</b> or only <b>member</b>).<br>';
   if ($config->getFederation()['eduPersonAffiliationLink']) {
     $errors .=
       sprintf('Please check <a href="%s">documentation on affiliation values</a> for more information.<br>', $config->getFederation()['eduPersonAffiliationLink']);
