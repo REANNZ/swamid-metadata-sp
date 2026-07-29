@@ -748,6 +748,7 @@ function showEntityList($status = 1) {
 
   printf('
     <table class="table table-striped table-bordered">
+      <thead>
       <tr>
         <th>IdP</th>
         <th>SP</th>
@@ -763,7 +764,10 @@ function showEntityList($status = 1) {
         <th><a href="?%s&%s">OrganizationName%s</a></th>
         <th>%s (UTC)</th>
         <th>%s (UTC)</th>
-        <th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s',
+        <th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th>
+      </tr>
+      </thead>
+      <tbody>%s',
     $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow,
     htmlspecialchars($query), $action, $filter,
     $orgOrder, $orgArrow, ($status == 1) ? 'Last Updated' : 'Created' ,
@@ -1035,6 +1039,7 @@ function showList($entities, $minLevel) {
       print "\n      </tr>\n";
     }
   } ?>
+      </tbody>
     </table>
 <?php
 }
