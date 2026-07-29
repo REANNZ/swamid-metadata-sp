@@ -769,8 +769,9 @@ function showEntityList($status = 1) {
       </thead>
       <tbody>%s',
     $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow,
-    htmlspecialchars($query), $action, $filter,
-    $orgOrder, $orgArrow, ($status == 1) ? 'Last Updated' : 'Created' ,
+    htmlspecialchars($query), $action,
+    $filter, $orgOrder, $orgArrow,
+    ($status == 1) ? 'Last Updated' : 'Created' ,
     ($status == 1) ? 'Last Confirmed' : 'Last Validated',
     $filter, $warningArrow, $filter, $errorArrow, "\n");
   showList($entities, $minLevel);
