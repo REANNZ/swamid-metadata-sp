@@ -115,23 +115,23 @@ function showEntityList($show) {
       print 'Show what ??????';
       return;
   }
+  printf('    <p>
+    <form>
+      Filter by entityID <input type="text" name="query" value="%s">
+      <input type="hidden" name="show" value="%s">
+      <input type="submit" value="Filter">
+    </form>%s', htmlspecialchars($query), htmlspecialchars($show), "\n");
   printf ('    <div class="table-responsive"><table id="entities-table" class="table table-striped table-bordered">
       <thead>
         <tr>
-          <th>
-            <form>
-              entityID <input type="text" name="query" value="%s">
-              <input type="hidden" name="show" value="%s">
-              <input type="submit" value="Filter">
-            </form>
-          </th>
+          <th>entityID</th>
           <th>Published in</th>
           <th>DisplayName</th>
           <th>OrganizationName</th>
           %s
         </tr>
       </thead>%s'
-    , htmlspecialchars($query), htmlspecialchars($show), $extraTH, "\n");
+    , $extraTH, "\n");
   $html->addTableSort('entities-table');
   $entities->bindValue(':Query', "%".$query."%");
   showList($entities, $show);

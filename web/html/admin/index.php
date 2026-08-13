@@ -653,34 +653,43 @@ function showEntityList($status = 1) {
   $entityIDArrow = '';
   $warningArrow = '';
   $errorArrow = '';
+  $currentSortOrder = '';
   if (isset($_REQUEST['feedDesc'])) {
     $sortOrder = '`publishIn` DESC, `entityID`';
     $feedOrder = 'feedAsc';
     $feedArrow = HTML_CLASS_FA_UP;
+    $currentSortOrder = 'feedDesc';
   } elseif (isset($_REQUEST['feedAsc'])) {
     $sortOrder = '`publishIn` ASC, `entityID`';
     $feedArrow = HTML_CLASS_FA_DOWN;
+    $currentSortOrder = 'feedAsc';
   } elseif (isset($_REQUEST['orgDesc'])) {
     $sortOrder = '`OrganizationName` DESC, `entityID`';
     $orgArrow = HTML_CLASS_FA_UP;
+    $currentSortOrder = 'orgDesc';
   } elseif (isset($_REQUEST['orgAsc'])) {
     $sortOrder = '`OrganizationName` ASC, `entityID`';
     $orgOrder = 'orgDesc';
     $orgArrow = HTML_CLASS_FA_DOWN;
+    $currentSortOrder = 'orgAsc';
   } elseif (isset($_REQUEST['warnings'])) {
     $sortOrder = '`warnings` DESC, `errors` DESC, `errorsNB` DESC, `entityID`, `id`';
     $warningArrow = HTML_CLASS_FA_DOWN;
+    $currentSortOrder = 'warnings';
   } elseif (isset($_REQUEST['errors'])) {
     $sortOrder = '`errors` DESC, `errorsNB` DESC, `warnings` DESC, `entityID`, `id`';
     $errorArrow = HTML_CLASS_FA_DOWN;
+    $currentSortOrder = 'errors';
   } elseif (isset($_REQUEST['entityIDDesc'])) {
     $sortOrder = '`entityID` DESC';
     $entityIDOrder = 'entityIDAsc';
     $entityIDArrow = HTML_CLASS_FA_UP;
+    $currentSortOrder = 'entityIDDesc';
   } else {
     $sortOrder = '`entityID` ASC';
     $entityIDOrder = 'entityIDDesc';
     $entityIDArrow = HTML_CLASS_FA_DOWN;
+    $currentSortOrder = 'entityIDAsc';
   }
 
   if (isset($_REQUEST['query'])) {
@@ -748,6 +757,7 @@ function showEntityList($status = 1) {
 
   printf('
     <table class="table table-striped table-bordered">
+      <thead>
       <tr>
         <th>IdP</th>
         <th>SP</th>
@@ -757,16 +767,21 @@ function showEntityList($status = 1) {
             <a href="?%s&%s">entityID%s</a>
             <input type="text" name="query" value="%s">
             <input type="hidden" name="action" value="%s">
+            <input type="hidden" name="%s" value="">
             <input type="submit" value="Filter">
           </form>
         </th>
         <th><a href="?%s&%s">OrganizationName%s</a></th>
         <th>%s (UTC)</th>
         <th>%s (UTC)</th>
-        <th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s',
+        <th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th>
+      </tr>
+      </thead>
+      <tbody>%s',
     $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow,
-    htmlspecialchars($query), $action, $filter,
-    $orgOrder, $orgArrow, ($status == 1) ? 'Last Updated' : 'Created' ,
+    htmlspecialchars($query), $action, $currentSortOrder,
+    $filter, $orgOrder, $orgArrow,
+    ($status == 1) ? 'Last Updated' : 'Created' ,
     ($status == 1) ? 'Last Confirmed' : 'Last Validated',
     $filter, $warningArrow, $filter, $errorArrow, "\n");
   showList($entities, $minLevel);
@@ -1035,6 +1050,7 @@ function showList($entities, $minLevel) {
       print "\n      </tr>\n";
     }
   } ?>
+      </tbody>
     </table>
 <?php
 }
