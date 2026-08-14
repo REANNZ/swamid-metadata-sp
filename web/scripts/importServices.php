@@ -1,6 +1,7 @@
 <?php
 
-function usage() {
+function usage()
+{
   global $argv;
   print "Usage:\n";
   printf("    %s service-file.json\n", $argv[0]);
@@ -14,7 +15,7 @@ require_once __DIR__ . '/../html/vendor/autoload.php';
 
 $config = new \metadata\Configuration();
 
-if ( $argc <= 1 ) {
+if ($argc <= 1) {
    usage();
    exit;
 }
@@ -32,8 +33,12 @@ if (!$config->getDb()->beginTransaction()) {
 foreach ($services as $service) {
   $metadata = new \metadata\Metadata($service->entityID, 'Prod');
   if ($metadata->id()) {
-    printf("Storing service URL %s for %s into %d\n",
-        $service->url, $service->entityID, $metadata->id());
+    printf(
+      "Storing service URL %s for %s into %d\n",
+      $service->url,
+      $service->entityID,
+      $metadata->id()
+    );
     $metadata->storeServiceInfo($metadata->id(), $service->url, 1);
   } else {
     printf("Unknown entityID %s\n", $service->entityID);

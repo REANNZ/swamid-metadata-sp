@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<ruleset name="MetadataSP Standard">
+  <rule ref="PSR12"/>
+  <description>Ruleset with 2-space indentation</description>
+
+  <rule ref="Generic.WhiteSpace.ScopeIndent">
+    <properties>
+      <property name="indent" value="2"/>
+    </properties>
+  </rule>
+
+  <rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+
+  <rule ref="PSR2.ControlStructures.SwitchDeclaration">
+    <properties>
+      <property name="indent" value="2" />
+    </properties>
+  </rule>
+
+  <rule ref="PSR2.Methods.FunctionCallSignature">
+    <properties>
+      <property name="indent" value="2" />
+    </properties>
+  </rule>
+
+  <rule ref="PSR12.ControlStructures.ControlStructureSpacing">
+    <properties>
+      <property name="indent" value="2" />
+    </properties>
+  </rule>
+
+  <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
+    <exclude-pattern>web/html/index.php</exclude-pattern>
+    <exclude-pattern>web/html/admin/index.php</exclude-pattern>
+    <exclude-pattern>web/html/admin/mds.php</exclude-pattern>
+    <exclude-pattern>web/html/admin/status.php</exclude-pattern>
+    <exclude-pattern>web/scripts/assignOrganizations.php</exclude-pattern>
+    <exclude-pattern>web/scripts/handleEntityUser.php</exclude-pattern>
+    <exclude-pattern>web/scripts/importOrganizations.php</exclude-pattern>
+    <exclude-pattern>web/scripts/importServices.php</exclude-pattern>
+    <exclude-pattern>web/scripts/movePublishedPending.php</exclude-pattern>
+    <exclude-pattern>web/scripts/revalidate.php</exclude-pattern>
+    <exclude-pattern>web/scripts/sendMailReminders.php</exclude-pattern>
+    <exclude-pattern>web/scripts/updateExternalEntities.php</exclude-pattern>
+    <exclude-pattern>web/scripts/revalidate.php</exclude-pattern>
+    <exclude-pattern>web/scripts/updateTestResults.php</exclude-pattern>
+  </rule>
+</ruleset>
