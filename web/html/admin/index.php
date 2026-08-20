@@ -1688,8 +1688,6 @@ function annualConfirmationList($list){
       if ($metadata->status() == 1) {
         # Entity is Published
         $metadata->getUserId($EPPN);
-        print $metadata->getWarning();
-        print $metadata->getError();
         if ($metadata->getWarning() == '' && $metadata->getError() == '' && $metadata->isResponsible()) {
           # User have access to entity and no warnings or error
           #check if IdP och SP and add save for later display
@@ -1698,7 +1696,6 @@ function annualConfirmationList($list){
           $entityList[$postArray[1]] = $metadata->entityID();
         } else {
           $errors .= sprintf('Problems with %s, skipping<br>', htmlspecialchars($metadata->entityID()));
-          print "Found error";
         }
       }
     }

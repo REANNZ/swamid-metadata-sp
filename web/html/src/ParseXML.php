@@ -39,6 +39,9 @@ class ParseXML extends Common {
 
   const TEXT_HTTPS = 'https://';
 
+  // sect. 3.5.1 of https://docs.oasis-open.org/security/saml-subject-id-attr/v1.0/cs01/saml-subject-id-attr-v1.0-cs01.html#_Toc536097237
+  const SUBJECT_ID_REQ_VALUES = array('subject-id', 'pairwise-id', 'none', 'any');
+
   /**
    * Parse XML
    *
@@ -298,6 +301,13 @@ class ParseXML extends Common {
                 $this->error .= "subject-id:req MUST contain exactly one AttributeValue\n";
               } else {
                 $this->subjectIdReqFound = true;
+              }
+              // validate subject-id:req attribute values
+              $attributeValue = $child->textContent;
+              if (!in_array($attributeValue, self::SUBJECT_ID_REQ_VALUES)) {
+                $this->error .= sprintf("subject-id:req value MUST be exactly one of: %s; found: \"%s\"\n",
+                    implode(", ", self::SUBJECT_ID_REQ_VALUES),
+                    htmlspecialchars($attributeValue));
               }
           }
         } else {
