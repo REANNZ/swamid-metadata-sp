@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata;
 
 use PDO;
@@ -6,8 +7,8 @@ use PDO;
 /**
  * Class to Validate SAML information
  */
-class Validate extends Common {
-
+class Validate extends Common
+{
   # Setup
   /**
    * Requests https://refeds.org/category/research-and-scholarship
@@ -30,11 +31,11 @@ class Validate extends Common {
    */
   protected $isSIRTFI2 = false;
 
-  const TEXT_COCOV1_REC = 'GÉANT Data Protection Code of Conduct v1 Recommend';
-  const TEXT_COCOV1_REQ = 'GÉANT Data Protection Code of Conduct v1 Require';
-  const TEXT_COCOV2_REC = 'REFEDS Data Protection Code of Conduct v2 Recommend';
-  const TEXT_COCOV2_REQ = 'REFEDS Data Protection Code of Conduct v2 Require';
-  const CT_SECURITY = 'other/security';
+  protected const TEXT_COCOV1_REC = 'GÉANT Data Protection Code of Conduct v1 Recommend';
+  protected const TEXT_COCOV1_REQ = 'GÉANT Data Protection Code of Conduct v1 Require';
+  protected const TEXT_COCOV2_REC = 'REFEDS Data Protection Code of Conduct v2 Recommend';
+  protected const TEXT_COCOV2_REQ = 'REFEDS Data Protection Code of Conduct v2 Require';
+  protected const CT_SECURITY = 'other/security';
 
 
   /**
@@ -43,7 +44,8 @@ class Validate extends Common {
    *
    * @return void
    */
-  public function __construct($id) {
+  public function __construct($id)
+  {
     parent::__construct($id, false);
   }
 
@@ -58,21 +60,30 @@ class Validate extends Common {
    *
    * @return void
    */
-  public function saml(){
+  public function saml()
+  {
     if (! $this->entityExists) {
       return 1;
     }
 
     $this->getEntityAttributes();
 
-    if ($this->isSP) { $this->validateSPServiceInfo(); }
+    if ($this->isSP) {
+      $this->validateSPServiceInfo();
+    }
 
     $this->checkRequiredContactPersonElements();
 
-    if ($this->isSPandRandS) { $this->validateSPRandS(); }
+    if ($this->isSPandRandS) {
+      $this->validateSPRandS();
+    }
 
-    if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
-    if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
+    if ($this->isSPandCoCov1) {
+      $this->validateSPCoCov1();
+    }
+    if ($this->isSPandCoCov2) {
+      $this->validateSPCoCov2();
+    }
     $this->saveResults();
   }
 
@@ -84,7 +95,8 @@ class Validate extends Common {
    *
    * @return void
    */
-  protected function getEntityAttributes() {
+  protected function getEntityAttributes()
+  {
     $this->isSPandRandS = false;
     $this->isSPandCoCov1 = false;
     $this->isSPandCoCov2 = false;
@@ -98,26 +110,26 @@ class Validate extends Common {
     while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($entityAttribute['type'] == 'assurance-certification') {
         switch ($entityAttribute['attribute']) {
-          case 'https://refeds.org/sirtfi' :
+          case 'https://refeds.org/sirtfi':
             $this->isSIRTFI = true;
             break;
-          case 'https://refeds.org/sirtfi2' :
+          case 'https://refeds.org/sirtfi2':
             $this->isSIRTFI2 = true;
             break;
-          default :
+          default:
         }
       } elseif ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
         switch ($entityAttribute['attribute']) {
-          case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
+          case 'http://refeds.org/category/research-and-scholarship': # NOSONAR Should be http://
             $this->isSPandRandS = true;
             break;
-          case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :  # NOSONAR Should be http://
+          case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1':  # NOSONAR Should be http://
             $this->isSPandCoCov1 = true;
             break;
-          case 'https://refeds.org/category/code-of-conduct/v2' :
+          case 'https://refeds.org/category/code-of-conduct/v2':
             $this->isSPandCoCov2 = true;
             break;
-          default :
+          default:
         }
       }
     }
@@ -131,33 +143,39 @@ class Validate extends Common {
    *
    * @return void
    */
-  protected function checkRequiredContactPersonElements() {
+  protected function checkRequiredContactPersonElements()
+  {
     $usedContactTypes = array();
-    $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
-      FROM `ContactPerson` WHERE `entity_id` = :Id');
+    $contactPersonHandler = $this->config->getDb()->prepare(
+      'SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
+      FROM `ContactPerson` WHERE `entity_id` = :Id'
+    );
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
 
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       $contactType = $contactPerson['contactType'];
 
-      // If a contactType other with remd:contactType http://refeds.org/metadata/contactType/securitythe element is present,
+      // If a contactType other with
+      //  remd:contactType http://refeds.org/metadata/contactType/securitythe element is present,
       // a GivenName element MUST be present and the ContactPerson MUST
       // respect the Traffic Light Protocol (TLP) during all incident response correspondence.
-      if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
+      if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security') {
         $contactType = self::CT_SECURITY;
-        if ( $contactPerson['givenName'] == '') {
-          $this->error .= "REFEDS Security Contact Metadata Extension Require that a GivenName element MUST be present for security ContactPerson.\n";
+        if ($contactPerson['givenName'] == '') {
+          $this->error .= 'REFEDS Security Contact Metadata Extension Require' .
+          " that a GivenName element MUST be present for security ContactPerson.\n";
         }
-        if ( $contactPerson['emailAddress'] == '') {
-          $this->error .= "REFEDS Security Contact Metadata Extension Require that a EmailAddress element MUST be present for security ContactPerson.\n";
+        if ($contactPerson['emailAddress'] == '') {
+          $this->error .= 'REFEDS Security Contact Metadata Extension Require' .
+          " that a EmailAddress element MUST be present for security ContactPerson.\n";
         }
         $usedContactTypes[$contactType] = true;
       }
     }
 
     // SIRTFI requires a Security contact
-    if (($this->isSIRTFI || $this->isSIRTFI2) && !isset ($usedContactTypes[self::CT_SECURITY])) {
+    if (($this->isSIRTFI || $this->isSIRTFI2) && !isset($usedContactTypes[self::CT_SECURITY])) {
       $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
     }
   }
@@ -170,7 +188,8 @@ class Validate extends Common {
    *
    * @return void
    */
-  protected function validateSPRandS() {
+  protected function validateSPRandS()
+  {
     $mduiArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`
       FROM `Mdui` WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
@@ -209,7 +228,8 @@ class Validate extends Common {
    *
    * @return void
    */
-  protected function validateSPCoCov1() {
+  protected function validateSPCoCov1()
+  {
     $mduiArray = array();
     $mduiElementArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`, `data`
@@ -226,13 +246,13 @@ class Validate extends Common {
 
       $mduiArray[$lang][$element] = $data;
       $mduiElementArray[$element] = true;
-      if ($element == 'PrivacyStatementURL' ) {
+      if ($element == 'PrivacyStatementURL') {
         $this->addURL($data, 3);
       }
       if ($element == 'Description' && strlen($data) > 140) {
         $this->warning .= self::TEXT_COCOV1_REC;
         $this->warning .= ' in 2.2 an MDUI - Description no longer than 140 characters.';
-        $this->warning .= sprintf (' lang=%s is %d chars. %s', $lang, strlen($data), "\n");
+        $this->warning .= sprintf(' lang=%s is %d chars. %s', $lang, strlen($data), "\n");
       }
     }
 
@@ -258,9 +278,10 @@ class Validate extends Common {
     if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
       $this->error .= self::TEXT_COCOV1_REQ . " in 2-2.1 at least one RequestedAttribute.\n";
     }
-    $this->warning .= 'The GEANT Data Protection Code of Conduct version 1.0 is now deprecated. ';
-    $this->warning .= 'It is recommended to transition to the REFEDS Data Protection Code of Conduct version 2.0, which reflects updated legislation, practices and standards. ';
-    $this->warning .= "However, version 1.0 may still be retained temporarily to ensure backward compatibility during the transition period.\n";
+    $this->warning .= 'The GEANT Data Protection Code of Conduct version 1.0 is now deprecated.' .
+      ' It is recommended to transition to the REFEDS Data Protection Code of Conduct version 2.0,' .
+      ' which reflects updated legislation, practices and standards. However, version 1.0 may still be retained' .
+      " temporarily to ensure backward compatibility during the transition period.\n";
   }
 
   /**
@@ -271,7 +292,8 @@ class Validate extends Common {
    *
    * @return void
    */
-  protected function validateSPCoCov2() {
+  protected function validateSPCoCov2()
+  {
     $mduiArray = array();
     $mduiElementArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`, `data`
@@ -291,13 +313,13 @@ class Validate extends Common {
 
       $mduiArray[$lang][$element] = $data;
       $mduiElementArray[$element] = true;
-      if ($element == 'PrivacyStatementURL' ) {
+      if ($element == 'PrivacyStatementURL') {
         $this->addURL($data, 2);
       }
       if ($element == 'Description' && strlen($data) > 140) {
-        $this->warning .= self::TEXT_COCOV2_REC;
-        $this->warning .= ' in 5.1.3 an MDUI - Description no longer than 140 characters.';
-        $this->warning .= sprintf (' lang=%s is %d chars. %s', $lang, strlen($data), "\n");
+        $this->warning .= self::TEXT_COCOV2_REC .
+          ' in 5.1.3 an MDUI - Description no longer than 140 characters.' .
+          sprintf(' lang=%s is %d chars. %s', $lang, strlen($data), "\n");
       }
     }
 
@@ -323,10 +345,15 @@ class Validate extends Common {
     $entityAttributesHandler->bindValue(self::BIND_TYPE, 'subject-id:req');
     $entityAttributesHandler->execute();
     if ($subjectIdReq = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($subjectIdReq['attribute'] != 'pairwise-id' && $subjectIdReq['attribute'] != 'subject-id') { # NOSONAR need to be 2 since subjectIdReq is created in above
+      if (
+        $subjectIdReq['attribute'] != 'pairwise-id' &&
+        $subjectIdReq['attribute'] != 'subject-id' # NOSONAR need to be 2 since subjectIdReq is created in above
+      ) {
         $this->error .= self::TEXT_COCOV2_REQ;
-        $this->error .= sprintf(" in 5.2.1 to only use pairwise-id or subject-id as subject-id:req. %s is NOT allowed.\n",
-          $subjectIdReq['attribute']);
+        $this->error .= sprintf(
+          " in 5.2.1 to only use pairwise-id or subject-id as subject-id:req. %s is NOT allowed.\n",
+          $subjectIdReq['attribute']
+        );
       }
     }
     $requestedAttributeHandler->execute();
@@ -348,7 +375,8 @@ class Validate extends Common {
    *
    * @return void
    */
-  protected function validateSPServiceInfo() {
+  protected function validateSPServiceInfo()
+  {
     $serviceURL = '';
     $enabled = 0;
     $this->getServiceInfo($this->dbIdNr, $serviceURL, $enabled);

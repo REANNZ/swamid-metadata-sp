@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata\Display;
 
 use PDO;
@@ -6,71 +7,73 @@ use PDO;
 /**
  * Class to display Metadata Statistics
  */
-class Statistics extends Common {
-
-const HTML_SPACER = '          %s';
+class Statistics extends Common
+{
+  private const HTML_SPACED_TABLE_END = "              </table>\n";
 
   /**
    * Show Statistics
    *
    * @return void
    */
-  public function showStatistics() {
+  public function showStatistics()
+  {
     # Default values
-    $entityActive='';
-    $entitySelected='false';
-    $entityShow='';
+    $entityActive = '';
+    $entitySelected = 'false';
+    $entityShow = '';
     #
-    $ecActive='';
-    $ecSelected='false';
-    $ecShow='';
+    $ecActive = '';
+    $ecSelected = 'false';
+    $ecShow = '';
     #
-    $ecsActive='';
-    $ecsSelected='false';
-    $ecsShow='';
+    $ecsActive = '';
+    $ecsSelected = 'false';
+    $ecsShow = '';
     #
-    $acActive='';
-    $acSelected='false';
-    $acShow='';
+    $acActive = '';
+    $acSelected = 'false';
+    $acShow = '';
     #
-    $assuranceActive='';
-    $assuranceSelected='false';
-    $assuranceShow='';
+    $assuranceActive = '';
+    $assuranceSelected = 'false';
+    $assuranceShow = '';
 
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
-        case 'ec' :
+        case 'ec':
           $ecActive = self::HTML_ACTIVE;
           $ecSelected = self::HTML_TRUE;
           $ecShow = self::HTML_SHOW;
           break;
-        case 'ecs' :
+        case 'ecs':
           $ecsActive = self::HTML_ACTIVE;
           $ecsSelected = self::HTML_TRUE;
           $ecsShow = self::HTML_SHOW;
           break;
-        case 'ac' :
+        case 'ac':
           $acActive = self::HTML_ACTIVE;
           $acSelected = self::HTML_TRUE;
           $acShow = self::HTML_SHOW;
           break;
-        case 'assurance' :
+        case 'assurance':
           $assuranceActive = self::HTML_ACTIVE;
           $assuranceSelected = self::HTML_TRUE;
           $assuranceShow = self::HTML_SHOW;
           break;
-        case 'entity' :
-        default :
+        case 'entity':
+        default:
           $entityActive = self::HTML_ACTIVE;
           $entitySelected = self::HTML_TRUE;
           $entityShow = self::HTML_SHOW;
-        }
+      }
     } else {
       $entityActive = self::HTML_ACTIVE;
       $entitySelected = self::HTML_TRUE;
       $entityShow = self::HTML_SHOW;
     }
-    printf('    <div class="row">
+    printf(
+      '    <div class="row">
       <div class="col">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
           <li class="nav-item">
@@ -93,29 +96,61 @@ const HTML_SPACER = '          %s';
             <a class="nav-link%s" id="assurance-tab" data-toggle="tab" href="#assurance" role="tab"
               aria-controls="assurance" aria-selected="%s">Assurance</a>
           </li>%s',
-      $entityActive, $entitySelected, $ecActive, $ecSelected,
-      $ecsActive, $ecsSelected, $acActive, $acSelected, $assuranceActive, $assuranceSelected, "\n");
-    printf('        </ul>
-      </div>%s    </div>%s    <script src="/include/chart/chart.umd.js"></script>%s    <div class="tab-content" id="myTabContent">
+      $entityActive,
+      $entitySelected,
+      $ecActive,
+      $ecSelected,
+      $ecsActive,
+      $ecsSelected,
+      $acActive,
+      $acSelected,
+      $assuranceActive,
+      $assuranceSelected,
+      "\n"
+    );
+    printf(
+      '        </ul>
+      </div>
+    </div>
+    <script src="/include/chart/chart.umd.js"></script>
+    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="entity" role="tabpanel" aria-labelledby="entity-tab">%s',
-        "\n", "\n", "\n",
-      $entityShow, $entityActive, "\n");
+      $entityShow,
+      $entityActive,
+      "\n"
+    );
     $this->showEntityStatistics();
-    printf('      </div><!-- End tab-pane entity -->
+    printf(
+      '      </div><!-- End tab-pane entity -->
       <div class="tab-pane fade%s%s" id="ec" role="tabpanel" aria-labelledby="ec-tab">%s',
-      $ecShow, $ecActive, "\n");
+      $ecShow,
+      $ecActive,
+      "\n"
+    );
     $this->showEcStatistics();
-    printf('      </div><!-- End tab-pane ec -->
+    printf(
+      '      </div><!-- End tab-pane ec -->
       <div class="tab-pane fade%s%s" id="ecs" role="tabpanel" aria-labelledby="ecs-tab">%s',
-        $ecsShow, $ecsActive, "\n");
+      $ecsShow,
+      $ecsActive,
+      "\n"
+    );
     $this->showEcsStatistics();
-    printf('      </div><!-- End tab-pane ecs -->
+    printf(
+      '      </div><!-- End tab-pane ecs -->
       <div class="tab-pane fade%s%s" id="ac" role="tabpanel" aria-labelledby="ac-tab">%s',
-        $acShow, $acActive, "\n");
+      $acShow,
+      $acActive,
+      "\n"
+    );
     $this->showAcStatistics();
-    printf('      </div><!-- End tab-pane ac -->
+    printf(
+      '      </div><!-- End tab-pane ac -->
       <div class="tab-pane fade%s%s" id="assurance" role="tabpanel" aria-labelledby="assurance-tab">%s',
-      $assuranceShow, $assuranceActive, "\n");
+      $assuranceShow,
+      $assuranceActive,
+      "\n"
+    );
     $this->showRAFStatistics();
     printf('      </div><!-- End tab-pane assurance -->
     </div><!-- End tab-content -->%s', "\n");
@@ -126,7 +161,8 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showEntityStatistics() {
+  protected function showEntityStatistics()
+  {
     $labelsArray = array();
     $spArray = array();
     $idpArray = array();
@@ -137,59 +173,74 @@ const HTML_SPACER = '          %s';
 
     $federation = $this->config->getFederation();
     $entitys = $this->config->getDb()->prepare(
-      "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;");
+      "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;"
+    );
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
       switch ($row['publishIn']) {
-        case 1 :
+        case 1:
           break;
-        case 2 :
-        case 3 :
-        case 6 :
-        case 7 :
-          $nrOfEntites ++;
+        case 2:
+        case 3:
+        case 6:
+        case 7:
+          $nrOfEntites++;
           $nrOfIdPs += $row['isIdP'] ? 1 : 0;
           $nrOfSPs += $row['isSP'] ? 1 : 0;
           break;
-        default :
-          printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
+        default:
+          printf("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
       }
     }
 
-    printf ('        <h3>Entity Statistics</h3>
+    printf('        <h3>Entity Statistics</h3>
         <p>Statistics on number of entities in %s.</p>
         <canvas id="total" width="200" height="50"></canvas>
         <br><br>', $federation['displayName']);
     $this->showCollapse('Statistics in numbers', 'EntityStatistics', false, 2, false);
-    printf ('
+    printf('
               <table class="table table-striped table-bordered">
                 <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', "\n");
-    printf('                <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
-      'Now', $nrOfEntites, $nrOfSPs, $nrOfIdPs, "\n");
+    printf(
+      '                <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
+      'Now',
+      $nrOfEntites,
+      $nrOfSPs,
+      $nrOfIdPs,
+      "\n"
+    );
     array_unshift($labelsArray, 'Now');
     array_unshift($spArray, $nrOfSPs);
     array_unshift($idpArray, $nrOfIdPs);
 
     $statusRows = $this->config->getDb()->prepare(
-      "SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM `EntitiesStatistics` ORDER BY `date` DESC;");
+      "SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM `EntitiesStatistics` ORDER BY `date` DESC;"
+    );
     $statusRows->execute();
     while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
-      $dateLabel = substr($row['date'],2,8);
-      printf('                <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
-        substr($row['date'],0,10), $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], "\n");
+      $dateLabel = substr($row['date'], 2, 8);
+      printf(
+        '                <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
+        substr($row['date'], 0, 10),
+        $row['NrOfEntites'],
+        $row['NrOfSPs'],
+        $row['NrOfIdPs'],
+        "\n"
+      );
       array_unshift($labelsArray, $dateLabel);
       array_unshift($spArray, $row['NrOfSPs']);
       array_unshift($idpArray, $row['NrOfIdPs']);
     }
-    printf (self::HTML_SPACER, self::HTML_TABLE_END);
+    print self::HTML_SPACED_TABLE_END;
     $this->showCollapseEnd('EntityStatistics', 2);
     $labels = implode("','", $labelsArray);
     $idps = implode(',', $idpArray);
     $sps = implode(',', $spArray);
 
-    printf ('
+    printf('
         <script>%s', "\n");
-    printf ("          const ctxTotal = document.getElementById('total').getContext('2d');
+    printf(
+      "          const ctxTotal = document.getElementById('total').getContext('2d');
           const myTotal = new Chart(ctxTotal, {
             type: 'line',
             data: {
@@ -216,7 +267,12 @@ const HTML_SPACER = '          %s';
               }
             }
           });%s        </script>%s",
-      $labels, $idps, $sps, "\n", "\n");
+      $labels,
+      $idps,
+      $sps,
+      "\n",
+      "\n"
+    );
   }
 
   /**
@@ -230,8 +286,10 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showEcGraph($canvas, $marked, $total) {
-    printf ("          const ctxEC%s = document.getElementById('ec_%s').getContext('2d');
+  protected function showEcGraph($canvas, $marked, $total)
+  {
+    printf(
+      "          const ctxEC%s = document.getElementById('ec_%s').getContext('2d');
           const myEC%s = new Chart(ctxEC%s, {
             width: 200,
             type: 'pie',
@@ -248,7 +306,14 @@ const HTML_SPACER = '          %s';
               }]
             },
           });%s",
-      $canvas, $canvas, $canvas, $canvas, $marked, $total - $marked, "\n");
+      $canvas,
+      $canvas,
+      $canvas,
+      $canvas,
+      $marked,
+      $total - $marked,
+      "\n"
+    );
   }
 
   /**
@@ -264,8 +329,10 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showEcGraphCoCo($both, $cocov1, $cocov2, $total) {
-    printf ("          const ctxECcoco = document.getElementById('ec_coco').getContext('2d');
+  protected function showEcGraphCoCo($both, $cocov1, $cocov2, $total)
+  {
+    printf(
+      "          const ctxECcoco = document.getElementById('ec_coco').getContext('2d');
           const myECcoco = new Chart(ctxECcoco, {
             width: 200,
             type: 'pie',
@@ -284,7 +351,12 @@ const HTML_SPACER = '          %s';
               }]
             },
           });%s",
-      $both, $cocov2 - $both, $cocov1 - $both, $total - $cocov2 - $cocov1, "\n");
+      $both,
+      $cocov2 - $both,
+      $cocov1 - $both,
+      $total - $cocov2 - $cocov1,
+      "\n"
+    );
   }
 
   /**
@@ -292,8 +364,8 @@ const HTML_SPACER = '          %s';
    *
    * @param int $both Number of SP:s with both R&S and PersonCoCo v1 and CoCo v2
    *
-   * @param int $rands Number of SP:s with http://refeds.org/category/research-and-scholarship # NOSONAR Should be http://
-   *
+   * @param int $rands Number of SP:s with http://refeds.org/category/research-and-scholarship # NOSONAR
+   *   Should be http://
    * @param int $personalized Number of SP:s with https://refeds.org/category/personalized
    *
    * @param int $pseudonymous Number of SP:s with https://refeds.org/category/pseudonymous
@@ -304,8 +376,10 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showEcGraphRefeds($both, $rands, $personalized, $pseudonymous, $anonymous, $total) {
-    printf ("          const ctxECRefeds = document.getElementById('ec_Refeds').getContext('2d');
+  protected function showEcGraphRefeds($both, $rands, $personalized, $pseudonymous, $anonymous, $total)
+  {
+    printf(
+      "          const ctxECRefeds = document.getElementById('ec_Refeds').getContext('2d');
           const myECRefeds = new Chart(ctxECRefeds, {
             width: 200,
             type: 'pie',
@@ -327,7 +401,14 @@ const HTML_SPACER = '          %s';
               }]
             },
           });%s",
-      $both, $rands - $both, $personalized - $both, $pseudonymous, $anonymous, $total - $rands - $personalized - $pseudonymous - $anonymous, "\n");
+      $both,
+      $rands - $both,
+      $personalized - $both,
+      $pseudonymous,
+      $anonymous,
+      $total - $rands - $personalized - $pseudonymous - $anonymous,
+      "\n"
+    );
   }
 
   /**
@@ -339,8 +420,10 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showECCountGraph($labels, $data) {
-    printf ("          const ctxECcounts = document.getElementById('ec_counts').getContext('2d');
+  protected function showECCountGraph($labels, $data)
+  {
+    printf(
+      "          const ctxECcounts = document.getElementById('ec_counts').getContext('2d');
           const myECcounts = new Chart(ctxECcounts, {
             width: 200,
             type: 'pie',
@@ -363,7 +446,9 @@ const HTML_SPACER = '          %s';
             },
           });%s",
       implode("','", $labels),
-      implode(',', $data), "\n");
+      implode(',', $data),
+      "\n"
+    );
   }
 
   /**
@@ -371,14 +456,21 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showEcStatistics() {
+  protected function showEcStatistics()
+  {
     $spHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isSP` = 1 AND `status` = 1 AND `publishIn` > 1;');
+      'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isSP` = 1 AND `status` = 1 AND `publishIn` > 1;'
+    );
     $entityAttributesHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
       FROM `EntityAttributes`, `Entities`
-      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
-      GROUP BY `attribute`;");
+      WHERE `type` = 'entity-category'
+        AND `entity_id` = `Entities`.`id`
+        AND `isSP` = 1
+        AND `status` = 1
+        AND `publishIn` > 1
+      GROUP BY `attribute`;"
+    );
     $bothCoCoHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`attribute`) AS `count`
       FROM `EntityAttributes`
@@ -392,7 +484,8 @@ const HTML_SPACER = '          %s';
           `isSP` = 1 AND
           `status` = 1 AND
           `publishIn` > 1 AND
-          `attribute`= 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1');");
+          `attribute`= 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1');"
+    );
     $bothRASandPers = $this->config->getDb()->prepare(
       "SELECT COUNT(`attribute`) AS `count`
       FROM `EntityAttributes`
@@ -406,7 +499,8 @@ const HTML_SPACER = '          %s';
           `isSP` = 1 AND
           `status` = 1 AND
           `publishIn` > 1 AND
-          `attribute`= 'https://refeds.org/category/personalized');");
+          `attribute`= 'https://refeds.org/category/personalized');"
+    );
     $noEcHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`id`) AS `count`
       FROM `Entities`
@@ -417,12 +511,14 @@ const HTML_SPACER = '          %s';
           SELECT DISTINCT `entity_id`
           FROM `EntityAttributes`
           WHERE `type` = 'entity-category'
-        );");
+        );"
+    );
     $ecCountHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`entityID`) AS nrOfEntyID, `count`
       FROM EntityEntityAttributes
       GROUP BY `count`
-      ORDER BY `count`;");
+      ORDER BY `count`;"
+    );
     // initialize results array - for keys where DB query returns no result
     $ecTagged = array(
       self::SAML_EC_ANONYMOUS => 0,
@@ -431,7 +527,8 @@ const HTML_SPACER = '          %s';
       self::SAML_EC_RANDS => 0,
       self::SAML_EC_COCOV2 => 0,
       self::SAML_EC_COCOV1 => 0,
-      self::SAML_EC_ESI => 0);
+      self::SAML_EC_ESI => 0
+    );
     $spHandler->execute();
     if ($sps = $spHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfSPs = $sps['count'];
@@ -462,7 +559,8 @@ const HTML_SPACER = '          %s';
     }
     $ecCountHandler->execute();
     $nrOfEcsPerEntityID = $ecCountHandler->fetchAll(PDO::FETCH_ASSOC);
-    printf ('        <div class="row">
+    printf(
+      '        <div class="row">
           <div class="col">
             <h3>REFEDS Categories</h3>
             <canvas id="ec_Refeds"></canvas>
@@ -497,29 +595,51 @@ const HTML_SPACER = '          %s';
         </table>
         <table class="table table-striped table-bordered">%s',
       $nrOfSPs,
-      $ecTagged[self::SAML_EC_ANONYMOUS], $ecTagged[self::SAML_EC_PSEUDONYMOUS], $ecTagged[self::SAML_EC_PERSONALIZED],
-      $ecTagged[self::SAML_EC_RANDS], $ecTagged['bothRASandPers'],
-      $ecTagged[self::SAML_EC_COCOV2], $ecTagged[self::SAML_EC_COCOV1], $ecTagged['bothCoCo'],
-      $ecTagged[self::SAML_EC_ESI], $nrOfSPsWithoutEc, "\n");
+      $ecTagged[self::SAML_EC_ANONYMOUS],
+      $ecTagged[self::SAML_EC_PSEUDONYMOUS],
+      $ecTagged[self::SAML_EC_PERSONALIZED],
+      $ecTagged[self::SAML_EC_RANDS],
+      $ecTagged['bothRASandPers'],
+      $ecTagged[self::SAML_EC_COCOV2],
+      $ecTagged[self::SAML_EC_COCOV1],
+      $ecTagged['bothCoCo'],
+      $ecTagged[self::SAML_EC_ESI],
+      $nrOfSPsWithoutEc,
+      "\n"
+    );
     $labelArray = array('No EC');
     $dataArray = array($nrOfSPsWithoutEc);
     foreach ($nrOfEcsPerEntityID as $rarray) {
       $labelArray[] = '# of EC = ' . $rarray['count'];
       $dataArray[] = $rarray['nrOfEntyID'];
-      printf('          <tr><th>Numer of SP:s with %d Entity Categor%s</th><td>%d</td></tr>%s',
-        $rarray['count'], $rarray['count'] == 1 ? 'y' : 'ies', $rarray['nrOfEntyID'], "\n");
+      printf(
+        '          <tr><th>Numer of SP:s with %d Entity Categor%s</th><td>%d</td></tr>%s',
+        $rarray['count'],
+        $rarray['count'] == 1 ? 'y' : 'ies',
+        $rarray['nrOfEntyID'],
+        "\n"
+      );
     }
     printf('          <tr><th>Numer of SP:s with no Entity Category</th><td>%d</td></tr>
         </table>
         <script>%s', $nrOfSPsWithoutEc, "\n");
-    $this->showEcGraphRefeds($ecTagged['bothRASandPers'], $ecTagged[self::SAML_EC_RANDS],
-      $ecTagged[self::SAML_EC_PERSONALIZED], $ecTagged[self::SAML_EC_PSEUDONYMOUS],
-      $ecTagged[self::SAML_EC_ANONYMOUS], $nrOfSPs);
-    $this->showEcGraphCoCo($ecTagged['bothCoCo'], $ecTagged[self::SAML_EC_COCOV1], $ecTagged[self::SAML_EC_COCOV2], $nrOfSPs);
+    $this->showEcGraphRefeds(
+      $ecTagged['bothRASandPers'],
+      $ecTagged[self::SAML_EC_RANDS],
+      $ecTagged[self::SAML_EC_PERSONALIZED],
+      $ecTagged[self::SAML_EC_PSEUDONYMOUS],
+      $ecTagged[self::SAML_EC_ANONYMOUS],
+      $nrOfSPs
+    );
+    $this->showEcGraphCoCo(
+      $ecTagged['bothCoCo'],
+      $ecTagged[self::SAML_EC_COCOV1],
+      $ecTagged[self::SAML_EC_COCOV2],
+      $nrOfSPs
+    );
     $this->showEcGraph('esi', $ecTagged[self::SAML_EC_ESI], $nrOfSPs);
     $this->showECCountGraph($labelArray, $dataArray);
     printf('        </script>%s', "\n");
-
   }
 
   /**
@@ -527,7 +647,8 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showEcsStatistics() {
+  protected function showEcsStatistics()
+  {
     $ecsTagged = array(
       self::SAML_EC_RANDS => 'rands',
       self::SAML_EC_COCOV1 => 'cocov1-1',
@@ -535,7 +656,8 @@ const HTML_SPACER = '          %s';
       self::SAML_EC_ANONYMOUS => 'anonymous',
       self::SAML_EC_COCOV2 => 'cocov2-1',
       self::SAML_EC_PERSONALIZED => 'personalized',
-      self::SAML_EC_PSEUDONYMOUS => 'pseudonymous');
+      self::SAML_EC_PSEUDONYMOUS => 'pseudonymous'
+    );
     $ecsTested = array(
       'anonymous' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
       'pseudonymous' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
@@ -543,7 +665,8 @@ const HTML_SPACER = '          %s';
       'rands' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
       'cocov1-1' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
       'cocov2-1' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
-      'esi' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0));
+      'esi' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0)
+    );
     $ecs = array(
       'anonymous' => 'REFEDS Anonymous Access',
       'pseudonymous' => 'REFEDS Pseudonymous Access',
@@ -551,11 +674,13 @@ const HTML_SPACER = '          %s';
       'rands' => 'REFEDS R&S',
       'cocov1-1' => 'GÉANT CoCo (v1)',
       'cocov2-1' => 'REFEDS CoCo (v2)',
-      'esi' => 'European Student Identifier');
+      'esi' => 'European Student Identifier'
+    );
 
     $nrOfIdPs = 0;
     $idpHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1;');
+      'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1;'
+    );
     $idpHandler->execute();
     if ($idps = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfIdPs = $idps['count'];
@@ -563,8 +688,13 @@ const HTML_SPACER = '          %s';
     $entityAttributesHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
       FROM `EntityAttributes`, `Entities`
-      WHERE `type` = 'entity-category-support' AND `entity_id` = `Entities`.`id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1
-      GROUP BY `attribute`;");
+      WHERE `type` = 'entity-category-support'
+        AND `entity_id` = `Entities`.`id`
+        AND `isIdP` = 1
+        AND `status` = 1
+        AND `publishIn` > 1
+      GROUP BY `attribute`;"
+    );
     $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       $ecsTested[$ecsTagged[$attribute['attribute']]]['MarkedWithECS'] = $attribute['count'];
@@ -575,71 +705,82 @@ const HTML_SPACER = '          %s';
       FROM `TestResults`
       WHERE `TestResults`.`entityID` IN (SELECT `entityID`
       FROM `Entities` WHERE `isIdP` = 1 AND `publishIn` > 1)
-      GROUP BY `test`, `result`;");
+      GROUP BY `test`, `result`;"
+    );
     $testResultsHandeler->execute();
     while ($testResult = $testResultsHandeler->fetch(PDO::FETCH_ASSOC)) {
       switch ($testResult['result']) {
-        case 'CoCo OK, Entity Category Support OK' :
-        case 'R&S attributes OK, Entity Category Support OK' :
-        case 'CoCo OK, Entity Category Support missing' :
-        case 'R&S attributes OK, Entity Category Support missing' :
-        case 'Anonymous attributes OK, Entity Category Support OK' :
-        case 'Personalized attributes OK, Entity Category Support OK' :
-        case 'Pseudonymous attributes OK, Entity Category Support OK' :
-        case 'Anonymous attributes OK, Entity Category Support missing' :
-        case 'Personalized attributes OK, Entity Category Support missing' :
-        case 'Pseudonymous attributes OK, Entity Category Support missing' :
-        case 'schacPersonalUniqueCode OK' :
+        case 'CoCo OK, Entity Category Support OK':
+        case 'R&S attributes OK, Entity Category Support OK':
+        case 'CoCo OK, Entity Category Support missing':
+        case 'R&S attributes OK, Entity Category Support missing':
+        case 'Anonymous attributes OK, Entity Category Support OK':
+        case 'Personalized attributes OK, Entity Category Support OK':
+        case 'Pseudonymous attributes OK, Entity Category Support OK':
+        case 'Anonymous attributes OK, Entity Category Support missing':
+        case 'Personalized attributes OK, Entity Category Support missing':
+        case 'Pseudonymous attributes OK, Entity Category Support missing':
+        case 'schacPersonalUniqueCode OK':
           $ecsTested[$testResult['test']]['OK'] += $testResult['count'];
           break;
-        case 'Support for CoCo missing, Entity Category Support missing' :
-        case 'R&S attribute missing, Entity Category Support missing' :
-        case 'CoCo is not supported, BUT Entity Category Support is claimed' :
-        case 'R&S attributes missing, BUT Entity Category Support claimed' :
-        case 'Anonymous attribute missing, Entity Category Support missing' :
-        case 'Anonymous attributes missing, BUT Entity Category Support claimed' :
-        case 'Personalized attribute missing, Entity Category Support missing' :
-        case 'Personalized attributes missing, BUT Entity Category Support claimed' :
-        case 'Pseudonymous attribute missing, Entity Category Support missing' :
-        case 'Pseudonymous attributes missing, BUT Entity Category Support claimed' :
-        case 'Missing schacPersonalUniqueCode' :
+        case 'Support for CoCo missing, Entity Category Support missing':
+        case 'R&S attribute missing, Entity Category Support missing':
+        case 'CoCo is not supported, BUT Entity Category Support is claimed':
+        case 'R&S attributes missing, BUT Entity Category Support claimed':
+        case 'Anonymous attribute missing, Entity Category Support missing':
+        case 'Anonymous attributes missing, BUT Entity Category Support claimed':
+        case 'Personalized attribute missing, Entity Category Support missing':
+        case 'Personalized attributes missing, BUT Entity Category Support claimed':
+        case 'Pseudonymous attribute missing, Entity Category Support missing':
+        case 'Pseudonymous attributes missing, BUT Entity Category Support claimed':
+        case 'Missing schacPersonalUniqueCode':
           $ecsTested[$testResult['test']]['Fail'] += $testResult['count'];
           break;
-        default :
+        default:
           printf('Unknown result : %s', $testResult['result']);
       }
     }
 
     $count = 1;
     foreach ($ecs as $ec => $descr) {
-      printf ('%s          <div class="col">
+      printf(
+        '%s          <div class="col">
             <h3>%s</h3>%s            <canvas id="ecs_%s"></canvas>
           </div>%s',
         $count == 1 ? "        <div class=\"row\">\n" : '',
-        $descr, "\n", str_replace('-','', $ec), "\n");
-      $count ++;
+        $descr,
+        "\n",
+        str_replace('-', '', $ec),
+        "\n"
+      );
+      $count++;
       if ($count == 5) {
-        printf ('        </div>%s', "\n");
+        printf('        </div>%s', "\n");
         $count = 1;
       }
     }
     if ($count > 1) {
       while ($count < 5) {
-        printf ('          <div class="col"></div>%s', "\n");
-        $count ++;
+        printf('          <div class="col"></div>%s', "\n");
+        $count++;
       }
-      printf ('        </div>%s', "\n");
+      printf('        </div>%s', "\n");
     }
-    printf ('        <br><br>
+    printf(
+      '        <br><br>
         <h3>Statistics in numbers</h3>
         <p>
-          Based on release-check test performed over the last 12 months and Entity-Category-Support registered in metadata.
+          Based on release-check test performed over the last 12 months and
+          Entity-Category-Support registered in metadata.
           <br>
           Out of %d IdPs in %s:
         </p>
         <table class="table table-striped table-bordered">
           <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s',
-      $nrOfIdPs, $this->config->getFederation()['displayName'], "\n");
+      $nrOfIdPs,
+      $this->config->getFederation()['displayName'],
+      "\n"
+    );
     $scripts = '';
     foreach ($ecs as $ec => $descr) {
       $markedECS = $ecsTested[$ec]['MarkedWithECS'];
@@ -648,11 +789,22 @@ const HTML_SPACER = '          %s';
         : 0;
       $fail = $ecsTested[$ec]['Fail'] > $nrOfIdPs ? 0 : $ecsTested[$ec]['Fail'];
       $notTested = $nrOfIdPs - $markedECS - $ok - $fail;
-      printf('          <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s',
-        $descr, $markedECS, ($markedECS/$nrOfIdPs*100), $ok, ($ok/$nrOfIdPs*100),
-        $fail, ($fail/$nrOfIdPs*100), $notTested, ($notTested/$nrOfIdPs*100), "\n");
-      $ecdiv = 'ecs_' . str_replace('-','', $ec);
-      $scripts .= sprintf ("          const ctx%s = document.getElementById('%s').getContext('2d');
+      printf(
+        '          <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s',
+        $descr,
+        $markedECS,
+        ($markedECS / $nrOfIdPs * 100),
+        $ok,
+        ($ok / $nrOfIdPs * 100),
+        $fail,
+        ($fail / $nrOfIdPs * 100),
+        $notTested,
+        ($notTested / $nrOfIdPs * 100),
+        "\n"
+      );
+      $ecdiv = 'ecs_' . str_replace('-', '', $ec);
+      $scripts .= sprintf(
+        "          const ctx%s = document.getElementById('%s').getContext('2d');
           const my%s = new Chart(ctx%s, {
             width: 200,
             type: 'pie',
@@ -671,11 +823,24 @@ const HTML_SPACER = '          %s';
               }]
             },
           });%s",
-        $ecdiv, $ecdiv,
-        $ecdiv, $ecdiv, $markedECS, $ok, $fail, $notTested, "\n");
+        $ecdiv,
+        $ecdiv,
+        $ecdiv,
+        $ecdiv,
+        $markedECS,
+        $ok,
+        $fail,
+        $notTested,
+        "\n"
+      );
     }
-    printf('      %s        <script>%s%s        </script>%s',
-      self::HTML_TABLE_END, "\n", $scripts, "\n");
+    printf(
+      '      %s        <script>%s%s        </script>%s',
+      self::HTML_TABLE_END,
+      "\n",
+      $scripts,
+      "\n"
+    );
   }
 
   /**
@@ -687,23 +852,28 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function printAssuranceCertificationRow($date, $assurance) {
-    printf('                <tr>
+  protected function printAssuranceCertificationRow($date, $assurance)
+  {
+    printf(
+      '                <tr>
                   <td>%s</td>
                   <td>%s</td><td>%s</td><td>%s</td>%s',
       htmlspecialchars($date),
       $assurance['NrOfEntites'],
       $assurance['SIRTFI'],
       $assurance['SIRTFI2'],
-      "\n");
+      "\n"
+    );
     if ($this->config->getFederation()['swamid_assurance']) {
-        printf('                  <td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>%s',
-      $assurance['NrOfIdPs'],
-      $assurance['AL1'],
-      $assurance['AL2'],
-      $assurance['AL2-MFA-HI'],
-      $assurance['AL3'],
-      "\n");
+      printf(
+        '                  <td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>%s',
+        $assurance['NrOfIdPs'],
+        $assurance['AL1'],
+        $assurance['AL2'],
+        $assurance['AL2-MFA-HI'],
+        $assurance['AL3'],
+        "\n"
+      );
     }
     print "                </tr>\n";
   }
@@ -713,7 +883,8 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showAcStatistics() {
+  protected function showAcStatistics()
+  {
     $assuranceArray = array();
     $labelsArray = array();
     $entityArray = array();
@@ -731,21 +902,25 @@ const HTML_SPACER = '          %s';
       FROM `EntitiesAssuranceStatistics`
       LEFT JOIN `EntitiesStatistics`
         ON `EntitiesAssuranceStatistics`.`date` = `EntitiesStatistics`.`date`
-      ORDER BY `date` DESC;');
+      ORDER BY `date` DESC;'
+    );
     $assuranceHandler = $this->config->getDb()->query(
       'SELECT `date`, `assurance`, `nrOfEntities`
-      FROM `EntitiesAssuranceStatistics`;');
+      FROM `EntitiesAssuranceStatistics`;'
+    );
 
     $entitysNowHandler = $this->config->getDb()->query(
       'SELECT COUNT(`id`)  AS entities, SUM(`isIdP`) AS idp
-      FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;');
+      FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;'
+    );
     $assuranceNowHandler = $this->config->getDb()->query(
       "SELECT COUNT(`entity_id`) AS entities, `attribute`
       FROM `EntityAttributes`, `Entities`
       WHERE `EntityAttributes`.`entity_id` = `Entities`.`id`
         AND `Entities`.`status` = 1
         AND `type` = 'assurance-certification'
-      GROUP BY `attribute`");
+      GROUP BY `attribute`"
+    );
 
     if ($row = $entitysNowHandler->fetch(PDO::FETCH_ASSOC)) {
       $assuranceArray['Now'] = array(
@@ -759,29 +934,29 @@ const HTML_SPACER = '          %s';
           'AL3' => 0,
       );
       while ($assuranceRow = $assuranceNowHandler->fetch(PDO::FETCH_ASSOC)) {
-        switch($assuranceRow['attribute']) {
-          case 'http://www.swamid.se/policy/assurance/al1' : # NOSONAR Should be http://
+        switch ($assuranceRow['attribute']) {
+          case 'http://www.swamid.se/policy/assurance/al1': # NOSONAR Should be http://
             $assuranceArray['Now']['AL1'] = $assuranceRow['entities'];
             break;
-          case 'http://www.swamid.se/policy/assurance/al2' : # NOSONAR Should be http://
+          case 'http://www.swamid.se/policy/assurance/al2': # NOSONAR Should be http://
             $assuranceArray['Now']['AL2'] = $assuranceRow['entities'];
             break;
-          case 'http://www.swamid.se/policy/assurance/al3' : # NOSONAR Should be http://
+          case 'http://www.swamid.se/policy/assurance/al3': # NOSONAR Should be http://
             $assuranceArray['Now']['AL3'] = $assuranceRow['entities'];
             break;
-          case 'https://refeds.org/sirtfi' :
+          case 'https://refeds.org/sirtfi':
             $assuranceArray['Now']['SIRTFI'] = $assuranceRow['entities'];
             break;
-          case 'https://refeds.org/sirtfi2' :
+          case 'https://refeds.org/sirtfi2':
             $assuranceArray['Now']['SIRTFI2'] = $assuranceRow['entities'];
             break;
-          default :
+          default:
         }
       }
     }
 
     while ($row = $dateHandler->fetch(PDO::FETCH_ASSOC)) {
-      $date = substr($row['date'],0,10);
+      $date = substr($row['date'], 0, 10);
       $assuranceArray[$date] = array(
           'NrOfEntites' => $row['NrOfEntites'],
           'NrOfIdPs' => $row['NrOfIdPs'],
@@ -795,37 +970,46 @@ const HTML_SPACER = '          %s';
     }
 
     while ($row = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
-      $assuranceArray[substr($row['date'],0,10)][$row['assurance']] = $row['nrOfEntities'];
+      $assuranceArray[substr($row['date'], 0, 10)][$row['assurance']] = $row['nrOfEntities'];
     }
 
-    printf ('        <h3>Assurance Certification Statistics</h3>');
+    printf('        <h3>Assurance Certification Statistics</h3>');
     $this->showCollapse('Dates of publication of Certifications', 'DatesCertifications', false, 2, false);
-    printf ('%s              <ul>
+    printf(
+      '%s              <ul>
                 %s<li>Sirtfi: 2016-11-08</li>
                 <li>Sirtfi 2: 2022-07-22</li>
               </ul>%s',
       "\n",
-      $swamid_assurance ?
-        '<li>Swamid AL1: 2013-09-24</li><li>Swamid AL2: 2015-12-02</li>
+      $swamid_assurance
+        ? '<li>Swamid AL1: 2013-09-24</li><li>Swamid AL2: 2015-12-02</li>
                 <li>Swamid AL2+MFA(-HI): 2018-09-12, deprecated 2020-12-31</li><li>Swamid AL3: 2020-06-15</li>
-                ' : '', "\n");
+                '
+        : '',
+      "\n"
+    );
     $this->showCollapseEnd('DatesCertifications', 2);
-    printf ('
+    printf(
+      '
         %s
         <h4>Entities with registered support for Sirtfi</h4>
         <canvas id="sirtfi" width="200" height="50"></canvas><br>',
       $swamid_assurance ? '<h4>Identity Providers with approved Assurance Profiles</h4>
-        <canvas id="idps" width="200" height="50"></canvas><br>' : '');
+        <canvas id="idps" width="200" height="50"></canvas><br>' : ''
+    );
     $this->showCollapse('Statistics in numbers', 'AcStatistics', false, 2, false);
 
-    printf ('
+    printf(
+      '
               <table class="table table-striped table-bordered">
                 <tr><th>Date</th><th>NrOfEntites</th><th>Sirtfi</th><th>Sirtfi2</th>%s</tr>%s',
-      $swamid_assurance ? '<th>NrOfIdPs</th><th>AL1</th><th>AL2</th><th>AL2-MFA-HI</th><th>AL3</th>' : '', "\n");
+      $swamid_assurance ? '<th>NrOfIdPs</th><th>AL1</th><th>AL2</th><th>AL2-MFA-HI</th><th>AL3</th>' : '',
+      "\n"
+    );
 
     foreach ($assuranceArray as $date => $assurance) {
       $this->printAssuranceCertificationRow($date, $assurance);
-      array_unshift($labelsArray, $date == 'Now' ? 'Now' : substr($date,2,8));
+      array_unshift($labelsArray, $date == 'Now' ? 'Now' : substr($date, 2, 8));
       array_unshift($entityArray, $assurance['NrOfEntites']);
       array_unshift($sirtfiArray, $assurance['SIRTFI'] - $assurance['SIRTFI2']);
       array_unshift($sirtfi2Array, $assurance['SIRTFI2']);
@@ -835,11 +1019,12 @@ const HTML_SPACER = '          %s';
       array_unshift($al2mhArray, $assurance['AL2-MFA-HI']);
       array_unshift($al3Array, $assurance['AL3']);
     }
-    printf (self::HTML_SPACER, self::HTML_TABLE_END);
+    print self::HTML_SPACED_TABLE_END;
     $this->showCollapseEnd('AcStatistics', 2);
 
-    printf ('%s        <script>%s', "\n", "\n");
-    printf ("          const ctxSirtfi = document.getElementById('sirtfi').getContext('2d');
+    printf('%s        <script>%s', "\n", "\n");
+    printf(
+      "          const ctxSirtfi = document.getElementById('sirtfi').getContext('2d');
           const mySirtfi = new Chart(ctxSirtfi, {
             type: 'line',
             data: {
@@ -875,10 +1060,12 @@ const HTML_SPACER = '          %s';
       implode(',', $sirtfiArray),
       implode(',', $sirtfi2Array),
       implode(',', $entityArray),
-      "\n");
+      "\n"
+    );
 
     if ($swamid_assurance) {
-      printf ("          const ctxIdps = document.getElementById('idps').getContext('2d');
+      printf(
+        "          const ctxIdps = document.getElementById('idps').getContext('2d');
           const myIdps = new Chart(ctxIdps, {
             type: 'line',
             data: {
@@ -925,7 +1112,9 @@ const HTML_SPACER = '          %s';
         implode(',', $al2Array),
         implode(',', $al2mhArray),
         implode(',', $al3Array),
-        implode(',', $idpArray), "\n");
+        implode(',', $idpArray),
+        "\n"
+      );
     }
     print "        </script>\n";
   }
@@ -939,24 +1128,33 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function printAssuranceRow($idp, $assurance) {
-    printf('                <tr>
+  protected function printAssuranceRow($idp, $assurance)
+  {
+    printf(
+      '                <tr>
                   <td>%s</td>%s',
-      htmlspecialchars($idp), "\n");
+      htmlspecialchars($idp),
+      "\n"
+    );
     if ($this->config->getFederation()['swamid_assurance']) {
-        printf('                  <td>%s</td><td>%s</td><td>%s</td>%s',
-      $assurance['SWAMID-AL1'],
-      $assurance['SWAMID-AL2'],
-      $assurance['SWAMID-AL3'],
-      "\n");
+      printf(
+        '                  <td>%s</td><td>%s</td><td>%s</td>%s',
+        $assurance['SWAMID-AL1'],
+        $assurance['SWAMID-AL2'],
+        $assurance['SWAMID-AL3'],
+        "\n"
+      );
     }
-    printf('                  <td>%s</td><td>%s</td><td>%s</td>
+    printf(
+      '                  <td>%s</td><td>%s</td><td>%s</td>
                   <td>%s</td>
                 </tr>%s',
       $assurance['RAF-low'],
       $assurance['RAF-medium'],
       $assurance['RAF-high'],
-      $assurance['None'], "\n");
+      $assurance['None'],
+      "\n"
+    );
   }
 
   /**
@@ -970,8 +1168,10 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showAssuranceCountGraph($canvas, $labels, $data) {
-    printf('        <script>
+  protected function showAssuranceCountGraph($canvas, $labels, $data)
+  {
+    printf(
+      '        <script>
           const ctx%s = document.getElementById(\'%s\').getContext(\'2d\');
           const my%s = new Chart(ctx%s, {
             width: 200,
@@ -992,9 +1192,14 @@ const HTML_SPACER = '          %s';
             },
           });
         </script>%s',
-      $canvas, $canvas, $canvas, $canvas,
+      $canvas,
+      $canvas,
+      $canvas,
+      $canvas,
       implode("','", $labels),
-      implode(',', $data), "\n");
+      implode(',', $data),
+      "\n"
+    );
   }
 
   /**
@@ -1002,20 +1207,23 @@ const HTML_SPACER = '          %s';
    *
    * @return void
    */
-  protected function showRAFStatistics() {
+  protected function showRAFStatistics()
+  {
     $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     $idpCountHandler = $this->config->getDb()->query(
       'SELECT COUNT(DISTINCT `assuranceLog`.`entityID`) AS `idps`
       FROM `assuranceLog`, `Entities`
       WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
-        AND `Entities`.`status` = 1;');
+        AND `Entities`.`status` = 1;'
+    );
     $idps = ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) ? $idpCountRow['idps'] : 0;
     $idpAssuranceHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(`assuranceLog`.`entityID`) as `count`, `assurance`
       FROM `assuranceLog`, `Entities`
       WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
         AND `Entities`.`status` = 1
-      GROUP BY `assurance`;');
+      GROUP BY `assurance`;'
+    );
     $idpAssuranceHandler->execute();
     $assuranceCount = array(
       'SWAMID-AL1' => 0, 'SWAMID-AL2' => 0, 'SWAMID-AL3' => 0,
@@ -1031,11 +1239,13 @@ const HTML_SPACER = '          %s';
         AND `isIdP` = 1
         AND `publishIn` > 1
         AND `type` = 'assurance-certification'
-      GROUP BY `attribute`;");
+      GROUP BY `attribute`;"
+    );
     $nrOfIdPs = $this->config->getDb()->query(
       "SELECT COUNT(`Entities`.`id`) AS `count`
       FROM `Entities`
-      WHERE `status` = 1 AND `isIdP` = 1 AND `publishIn` > 1;")->fetchColumn();
+      WHERE `status` = 1 AND `isIdP` = 1 AND `publishIn` > 1;"
+    )->fetchColumn();
 
     $metaAssuranceHandler->execute();
     $metaAssuranceCount = array(
@@ -1045,23 +1255,29 @@ const HTML_SPACER = '          %s';
     while ($metaAssuranceRow = $metaAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       $metaAssuranceCount[$metaAssuranceRow['attribute']] = $metaAssuranceRow['count'];
     }
-    printf('        <div class="row">
+    printf(
+      '        <div class="row">
           <div class="col">
             <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
-      $idps, "\n");
+      $idps,
+      "\n"
+    );
     if ($swamid_assurance) {
-        printf('            <div class="row"><div class="col">&nbsp;</div></div>
+      printf(
+        '            <div class="row"><div class="col">&nbsp;</div></div>
             <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
             <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
             <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
             <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>%s',
-      $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-      $idps - $assuranceCount['SWAMID-AL1'],
-      "\n");
+        $assuranceCount['SWAMID-AL3'],
+        $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+        $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+        $idps - $assuranceCount['SWAMID-AL1'],
+        "\n"
+      );
     }
-    printf('            <div class="row"><div class="col">&nbsp;</div></div>
+    printf(
+      '            <div class="row"><div class="col">&nbsp;</div></div>
             <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
             <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
             <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
@@ -1071,7 +1287,8 @@ const HTML_SPACER = '          %s';
       $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
       $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
       $idps - $assuranceCount['RAF-low'],
-      "\n");
+      "\n"
+    );
     printf(( $swamid_assurance ?  '
           <div class="col">
             <h3>SWAMID Assurance</h3>
@@ -1102,15 +1319,18 @@ const HTML_SPACER = '          %s';
       FROM `assuranceLog`, `Entities`
       WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
         AND `Entities`.`status` = 1
-      ORDER BY `entityID`, `assurance`;');
+      ORDER BY `entityID`, `assurance`;'
+    );
     $assuranceHandler->execute();
     $oldIdp = false;
     $assurance = array(
     'SWAMID-AL1' => '', 'SWAMID-AL2' => '', 'SWAMID-AL3' => '',
     'RAF-low' => '', 'RAF-medium' => '', 'RAF-high' => '', 'None' => '');
     while ($assuranceRow = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
-      if($assuranceRow['entityID'] != $oldIdp) {
-        if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance); }
+      if ($assuranceRow['entityID'] != $oldIdp) {
+        if ($oldIdp) {
+          $this->printAssuranceRow($oldIdp, $assurance);
+        }
         $oldIdp = $assuranceRow['entityID'];
         $assurance['SWAMID-AL1'] = '';
         $assurance['SWAMID-AL2'] = '';
@@ -1122,25 +1342,36 @@ const HTML_SPACER = '          %s';
       }
       $assurance[$assuranceRow['assurance']] = $assuranceRow['logDate'];
     }
-    if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance);}
-    printf (self::HTML_SPACER, self::HTML_TABLE_END);
+    if ($oldIdp) {
+      $this->printAssuranceRow($oldIdp, $assurance);
+    }
+    print self::HTML_SPACED_TABLE_END;
     $this->showCollapseEnd('RAFStatistics', 2);
     print "\n";
     if ($swamid_assurance) {
-      $this->showAssuranceCountGraph('swamid',
+      $this->showAssuranceCountGraph(
+        'swamid',
         array('AL3', 'AL2', 'AL1', 'None'),
-        array($assuranceCount['SWAMID-AL3'],
+        array(
+          $assuranceCount['SWAMID-AL3'],
           $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
           $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-          $idps - $assuranceCount['SWAMID-AL1']));
+          $idps - $assuranceCount['SWAMID-AL1']
+        )
+      );
     }
-    $this->showAssuranceCountGraph('raf',
+    $this->showAssuranceCountGraph(
+      'raf',
       array('High', 'Medium', 'Low', 'None'),
-      array($assuranceCount['RAF-high'],
+      array(
+        $assuranceCount['RAF-high'],
         $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
         $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-        $idps - $assuranceCount['RAF-low']));
-    $this->showAssuranceCountGraph('meta',
+        $idps - $assuranceCount['RAF-low']
+      )
+    );
+    $this->showAssuranceCountGraph(
+      'meta',
       array('AL3', 'AL2', 'AL1', 'None'),
       array(
         $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
@@ -1149,6 +1380,7 @@ const HTML_SPACER = '          %s';
         $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] - # NOSONAR Should be http://
           $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'], # NOSONAR Should be http://
         $nrOfIdPs - $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] # NOSONAR Should be http://
-      ));
+      )
+    );
   }
 }

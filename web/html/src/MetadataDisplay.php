@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata;
 
 use Jfcherng\Diff\Differ;
@@ -9,17 +10,18 @@ use PDO;
 /**
  * Class to display Metadata
  */
-class MetadataDisplay extends Display\Common {
+class MetadataDisplay extends Display\Common
+{
   use CommonTrait;
 
-  const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
-  const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
-  const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
-  const HTML_SHOWALLORGS = '&showAllOrgs';
-  const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
-  const HTML_SELECTED = ' selected';
+  private const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
+  private const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
+  private const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
+  private const HTML_SHOWALLORGS = '&showAllOrgs';
+  private const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
+  private const HTML_SELECTED = ' selected';
 
-  const TEXT_IHNBVF = 'IMPS has not been validated for %d months';
+  private const TEXT_IHNBVF = 'IMPS has not been validated for %d months';
 
   /**
    * Shows menu row
@@ -32,35 +34,41 @@ class MetadataDisplay extends Display\Common {
    *
    * @return array
    */
-  public function showStatusbar($entityId, $admin = false){
+  public function showStatusbar($entityId, $admin = false)
+  {
+    $entityError = array(
+        'saml1Error' => false,
+        'algorithmError' => false,
+        'IMPSError' => false,
+        'organizationErrors' => false);
     $entityHandler = $this->config->getDb()->prepare('
-      SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`, `OrganizationInfo_id`
+      SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`,
+        `warnings`, `errors`, `errorsNB`, `status`, `OrganizationInfo_id`
       FROM `Entities` WHERE `id` = :Id;');
     $entityHandler->execute(array(self::BIND_ID => $entityId));
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       # Setup up all handlers in DB
       # Better to wait untill we know that entity exists.
-      $entityError = array(
-        'saml1Error' => false,
-        'algorithmError' => false,
-        'IMPSError' => false,
-        'organizationErrors' => false);
-      $urlHandler1 = $this->config->getDb()->prepare('
-        SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
+      $urlHandler1 = $this->config->getDb()->prepare(
+        'SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
         FROM `URLs`
-        WHERE `URL` IN (SELECT `data` FROM `Mdui` WHERE `entity_id` = :Id);');
-      $urlHandler2 = $this->config->getDb()->prepare("
-        SELECT `status`, `URL`, `lastValidated`, `validationOutput`
+        WHERE `URL` IN (SELECT `data` FROM `Mdui` WHERE `entity_id` = :Id);'
+      );
+      $urlHandler2 = $this->config->getDb()->prepare(
+        "SELECT `status`, `URL`, `lastValidated`, `validationOutput`
         FROM `URLs`
-        WHERE `URL` IN (SELECT `URL` FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error');");
-      $urlHandler3 = $this->config->getDb()->prepare("
-        SELECT `status`, `URL`, `lastValidated`, `validationOutput`
+        WHERE `URL` IN (SELECT `URL` FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error');"
+      );
+      $urlHandler3 = $this->config->getDb()->prepare(
+        "SELECT `status`, `URL`, `lastValidated`, `validationOutput`
         FROM `URLs`
-        WHERE `URL` IN (SELECT `data` FROM `Organization` WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id);");
-      $urlHandler4 = $this->config->getDb()->prepare("
-        SELECT `status`, `URL`, `lastValidated`, `validationOutput`
+        WHERE `URL` IN (SELECT `data` FROM `Organization` WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id);"
+      );
+      $urlHandler4 = $this->config->getDb()->prepare(
+        "SELECT `status`, `URL`, `lastValidated`, `validationOutput`
         FROM `URLs`
-        WHERE `URL` IN (SELECT `ServiceURL` FROM `ServiceInfo` WHERE `entity_id` = :Id);");
+        WHERE `URL` IN (SELECT `ServiceURL` FROM `ServiceInfo` WHERE `entity_id` = :Id);"
+      );
       $impsHandler = $this->config->getDb()->prepare(
         'SELECT `IMPS_id`, `lastValidated`, `lastUpdated`,
           NOW() - INTERVAL 10 MONTH AS `warnDate`,
@@ -69,11 +77,16 @@ class MetadataDisplay extends Display\Common {
         FROM `IdpIMPS`, `IMPS`
         WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND
           `IdpIMPS`.`entity_id` = :Id
-        ORDER BY `lastValidated`;');
-      $testResults = $this->config->getDb()->prepare('SELECT `test`, `result`, `time`
-        FROM `TestResults` WHERE entityID = :EntityID;');
-      $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
-        FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type;");
+        ORDER BY `lastValidated`;'
+      );
+      $testResults = $this->config->getDb()->prepare(
+        'SELECT `test`, `result`, `time`
+        FROM `TestResults` WHERE entityID = :EntityID;'
+      );
+      $entityAttributesHandler = $this->config->getDb()->prepare(
+        "SELECT `attribute`
+        FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type;"
+      );
       $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
 
       $errors = '';
@@ -82,8 +95,12 @@ class MetadataDisplay extends Display\Common {
 
       $entityError['saml1Error'] = strpos(
         $entity['errors'] . $entity['errorsNB'] . $entity['warnings'],
-        'claims support for SAML1.');
-      $entityError['saml1Error'] =  strpos($entity['errors'], 'oasis-sstc-saml-bindings-1.1: SAML1 Binding in ') === false ? $entityError['saml1Error'] : true;
+        'claims support for SAML1.'
+      );
+      $entityError['saml1Error'] =  strpos(
+        $entity['errors'],
+        'oasis-sstc-saml-bindings-1.1: SAML1 Binding in '
+      ) === false ? $entityError['saml1Error'] : true;
       $entityError['algorithmError'] = strpos($entity['errors'], ' is obsolete in xml');
 
       if ($entity['isIdP']) {
@@ -114,10 +131,10 @@ class MetadataDisplay extends Display\Common {
           while ($testResult = $testResults->fetch(PDO::FETCH_ASSOC)) {
             $ecsTested[$testResult['test']] = true;
             switch ($testResult['test']) {
-              case 'rands' :
+              case 'rands':
                 $tag = self::SAML_EC_RANDS;
                 break;
-              case 'cocov1-1' :
+              case 'cocov1-1':
                 $tag = self::SAML_EC_COCOV1;
                 break;
               case 'anonymous':
@@ -135,47 +152,55 @@ class MetadataDisplay extends Display\Common {
               case 'esi':
                 $tag = self::SAML_EC_ESI;
                 break;
-              default :
+              default:
+                $tag = 'not defined';
                 printf('Unknown test : %s', $testResult['test']);
             }
             switch ($testResult['result']) {
-              case 'CoCo OK, Entity Category Support OK' :
-              case 'R&S attributes OK, Entity Category Support OK' :
-              case 'CoCo OK, Entity Category Support missing' :
-              case 'R&S attributes OK, Entity Category Support missing' :
-              case 'Anonymous attributes OK, Entity Category Support OK' :
-              case 'Personalized attributes OK, Entity Category Support OK' :
-              case 'Pseudonymous attributes OK, Entity Category Support OK' :
-              case 'Anonymous attributes OK, Entity Category Support missing' :
-              case 'Personalized attributes OK, Entity Category Support missing' :
-              case 'Pseudonymous attributes OK, Entity Category Support missing' :
-              case 'schacPersonalUniqueCode OK' :
-                if  (! $ecsTagged[$tag]) {
+              case 'CoCo OK, Entity Category Support OK':
+              case 'R&S attributes OK, Entity Category Support OK':
+              case 'CoCo OK, Entity Category Support missing':
+              case 'R&S attributes OK, Entity Category Support missing':
+              case 'Anonymous attributes OK, Entity Category Support OK':
+              case 'Personalized attributes OK, Entity Category Support OK':
+              case 'Pseudonymous attributes OK, Entity Category Support OK':
+              case 'Anonymous attributes OK, Entity Category Support missing':
+              case 'Personalized attributes OK, Entity Category Support missing':
+              case 'Pseudonymous attributes OK, Entity Category Support missing':
+              case 'schacPersonalUniqueCode OK':
+                if (! $ecsTagged[$tag]) {
                   $warnings .= sprintf('SWAMID Release-check: %s is supported according to release-check', $tag);
                   $warnings .= " but not marked in Metadata (EntityAttributes/entity-category-support).\n";
                 }
                 break;
-              case 'Support for CoCo missing, Entity Category Support missing' :
-              case 'R&S attribute missing, Entity Category Support missing' :
-              case 'CoCo is not supported, BUT Entity Category Support is claimed' :
-              case 'R&S attributes missing, BUT Entity Category Support claimed' :
-              case 'Anonymous attribute missing, Entity Category Support missing' :
-              case 'Personalized attribute missing, Entity Category Support missing' :
-              case 'Pseudonymous attribute missing, Entity Category Support missing' :
-              case 'Anonymous attributes missing, BUT Entity Category Support claimed' :
-              case 'Personalized attributes missing, BUT Entity Category Support claimed' :
-              case 'Pseudonymous attributes missing, BUT Entity Category Support claimed' :
-              case 'Missing schacPersonalUniqueCode' :
-                $errors .= ($ecsTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n",
-                  htmlspecialchars($testResult['time']), htmlspecialchars($testResult['result'])) : '';
+              case 'Support for CoCo missing, Entity Category Support missing':
+              case 'R&S attribute missing, Entity Category Support missing':
+              case 'CoCo is not supported, BUT Entity Category Support is claimed':
+              case 'R&S attributes missing, BUT Entity Category Support claimed':
+              case 'Anonymous attribute missing, Entity Category Support missing':
+              case 'Personalized attribute missing, Entity Category Support missing':
+              case 'Pseudonymous attribute missing, Entity Category Support missing':
+              case 'Anonymous attributes missing, BUT Entity Category Support claimed':
+              case 'Personalized attributes missing, BUT Entity Category Support claimed':
+              case 'Pseudonymous attributes missing, BUT Entity Category Support claimed':
+              case 'Missing schacPersonalUniqueCode':
+                $errors .= ($ecsTagged[$tag]) ? sprintf(
+                  "SWAMID Release-check: (%s) %s.\n",
+                  htmlspecialchars($testResult['time']),
+                  htmlspecialchars($testResult['result'])
+                ) : '';
                 break;
-              default :
+              default:
                 printf('Unknown result : %s', $testResult['result']);
             }
           }
           foreach ($ecsTested as $tag => $tested) {
             if (! $ecsTested[$tag]) {
-              $warnings .= sprintf('%s Release-check: Updated test for %s missing please rerun', $this->config->getFederation()['displayName'], $tag);
+              $warnings .= sprintf(
+                '%s Release-check: Updated test for %s missing please rerun',
+                $this->config->getFederation()['displayName'],
+                $tag
+              );
               $warnings .= sprintf(' at <a href="%s">Release-check</a>%s', $this->getReleaseCheckURL($tag), "\n");
             }
           }
@@ -184,8 +209,13 @@ class MetadataDisplay extends Display\Common {
         $urlHandler2->execute(array(self::BIND_ID => $entityId));
         while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
           if ($url['status'] > 0) {
-            $errors .= sprintf(self::HTML_SHOW_URL,
-              $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
+            $errors .= sprintf(
+              self::HTML_SHOW_URL,
+              $url['validationOutput'],
+              urlencode($url['URL']),
+              htmlspecialchars($url['URL']),
+              "\n"
+            );
           }
         }
 
@@ -193,14 +223,28 @@ class MetadataDisplay extends Display\Common {
           $impsHandler->execute(array(self::BIND_ID => $entityId));
           if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
             if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
-              $errors .= sprintf('SWAMID Assurance 3.1: Evidence of compliance with this profile MUST be part of the Identity Management Practice Statement. Current approved IMPS is based on a earlier version of the assurance profile.%s', "\n");
+              $errors .= sprintf(
+                'SWAMID Assurance 3.1: Evidence of compliance with this profile MUST be part of the Identity' .
+                ' Management Practice Statement. Current approved IMPS is based on a earlier version' .
+                ' of the assurance profile.%s',
+                "\n"
+              );
             }
             if ($imps['warnDate'] > $imps['lastValidated']) {
               $entityError['IMPSError'] = true;
               if ($imps['errorDate'] > $imps['lastValidated']) {
-                $errors .= sprintf('SWAMID Assurance 3.2: The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate.%s', "\n");
+                $errors .= sprintf(
+                  'SWAMID Assurance 3.2: The Member Organisation MUST annually confirm that their approved Identity' .
+                  ' Management Practice Statement is still accurate.%s',
+                  "\n"
+                );
               } else {
-                $warnings .= sprintf('SWAMID Assurance 3.2: The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate. This must be done before %s.%s', substr($imps['expireDate'], 0, 10), "\n");
+                $warnings .= sprintf(
+                  'SWAMID Assurance 3.2: The Member Organisation MUST annually confirm that their approved Identity' .
+                  ' Management Practice Statement is still accurate. This must be done before %s.%s',
+                  substr($imps['expireDate'], 0, 10),
+                  "\n"
+                );
               }
             }
           } else {
@@ -225,24 +269,39 @@ class MetadataDisplay extends Display\Common {
       $urlHandler1->execute(array(self::BIND_ID => $entityId));
       while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0 || ($coCov1SP  && $url['cocov1Status'] > 0)) {
-          $errors .= sprintf(self::HTML_SHOW_URL,
-            $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
+          $errors .= sprintf(
+            self::HTML_SHOW_URL,
+            $url['validationOutput'],
+            urlencode($url['URL']),
+            htmlspecialchars($url['URL']),
+            "\n"
+          );
         }
       }
       // OrganizationURL
       $urlHandler3->execute(array(self::BIND_ID => $entityId));
       while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0) {
-          $errors .= sprintf(self::HTML_SHOW_URL,
-            $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
+          $errors .= sprintf(
+            self::HTML_SHOW_URL,
+            $url['validationOutput'],
+            urlencode($url['URL']),
+            htmlspecialchars($url['URL']),
+            "\n"
+          );
         }
       }
       // ServiceURL
       $urlHandler4->execute(array(self::BIND_ID => $entityId));
       while ($url = $urlHandler4->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0) {
-          $errors .= sprintf(self::HTML_SHOW_URL,
-            $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
+          $errors .= sprintf(
+            self::HTML_SHOW_URL,
+            $url['validationOutput'],
+            urlencode($url['URL']),
+            htmlspecialchars($url['URL']),
+            "\n"
+          );
         }
       }
       if ($this->config->getFederation()['checkOrganization']) {
@@ -251,7 +310,8 @@ class MetadataDisplay extends Display\Common {
         $organizationInfoHandler = $this->config->getDb()->prepare(
           'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
           FROM `OrganizationInfoData`
-          WHERE `OrganizationInfo_id` = :Id;');
+          WHERE `OrganizationInfo_id` = :Id;'
+        );
         $organizationDefaults = array();
         $organizationDefaultsMatch = true;
 
@@ -262,52 +322,85 @@ class MetadataDisplay extends Display\Common {
         } else {
           $organizationInfoHandler->execute(array(self::BIND_ID => $entity['OrganizationInfo_id']));
           while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-            $organizationDefaults[$organizationInfo['lang']]['OrganizationName'] = $organizationInfo['OrganizationName'];
-            $organizationDefaults[$organizationInfo['lang']]['OrganizationDisplayName'] = $organizationInfo['OrganizationDisplayName'];
-            $organizationDefaults[$organizationInfo['lang']]['OrganizationURL'] = $organizationInfo['OrganizationURL'];
+            $organizationDefaults[$organizationInfo['lang']]['OrganizationName'] =
+              $organizationInfo['OrganizationName'];
+            $organizationDefaults[$organizationInfo['lang']]['OrganizationDisplayName'] =
+              $organizationInfo['OrganizationDisplayName'];
+            $organizationDefaults[$organizationInfo['lang']]['OrganizationURL'] =
+              $organizationInfo['OrganizationURL'];
           }
           $organizationHandler->execute(array(self::BIND_ID => $entityId));
           while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-            if (isset($organizationDefaults[$organization['lang']])
-              && $organizationDefaults[$organization['lang']][$organization['element']] <> $organization['data']) {
+            if (
+              isset($organizationDefaults[$organization['lang']]) &&
+              $organizationDefaults[$organization['lang']][$organization['element']] <> $organization['data']
+            ) {
                 $organizationDefaultsMatch = false;
                 $entityError['organizationErrors'] = true;
             }
           }
-          $errors .= $organizationDefaultsMatch ? '' : 'The Organization information in SAML Metadata is different from information registered for the organization bound to the Entity.';
+          $errors .= $organizationDefaultsMatch ? ''
+            : 'The Organization information in SAML Metadata is different from information registered' .
+            ' for the organization bound to the Entity.';
         }
       }
       $errors .= $entity['errors'] . $entity['errorsNB'];
       if ($errors != '') {
-        printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
+        printf(
+          '%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
         <b>Errors:</b>
         <ul>
           <li>%s</li>
-        </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($errors)), "\n", "\n");
+        </ul>%s      </div>%s    </div>',
+          "\n",
+          "\n",
+          str_ireplace("\n", "</li>\n          <li>", trim($errors)),
+          "\n",
+          "\n"
+        );
       }
       $warnings .= $entity['warnings'];
-      if ( $warnings != '') {
-        printf('%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">
+      if ($warnings != '') {
+        printf(
+          '%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">
         <b>Warnings:</b>
         <ul>
           <li>%s</li>
-        </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($warnings)), "\n", "\n");
+        </ul>%s      </div>%s    </div>',
+          "\n",
+          "\n",
+          str_ireplace("\n", "</li>\n          <li>", trim($warnings)),
+          "\n",
+          "\n"
+        );
       }
 
       if ($entity['validationOutput'] != '') {
         $notice .= $entity['validationOutput'];
       }
       if ($notice != '') {
-        printf('%s    <div class="row alert alert-primary" role="alert">%s      <div class="col">
+        printf(
+          '%s    <div class="row alert alert-primary" role="alert">%s      <div class="col">
         <b>Notice:</b><ul>
           <li>%s</li>
-        </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($notice)), "\n", "\n");
+        </ul>%s      </div>%s    </div>',
+          "\n",
+          "\n",
+          str_ireplace("\n", "</li>\n          <li>", trim($notice)),
+          "\n",
+          "\n"
+        );
       }
 
       if ($admin && $entity['status'] < 4) {
-        printf('%s    <div class="row">%s    <a href=".?validateEntity=%d">
+        printf(
+          '%s    <div class="row">%s    <a href=".?validateEntity=%d">
       <button type="button" class="btn btn-outline-primary">Validate</button>%s    </a></div>',
-          "\n", "\n", $entityId, "\n");
+          "\n",
+          "\n",
+          $entityId,
+          "\n"
+        );
       }
     }
     return $entityError;
@@ -323,7 +416,8 @@ class MetadataDisplay extends Display\Common {
    * @return string Release check URL with tag included (or unmodified if tag absent)
    */
 
-  private function getReleaseCheckURL($tag = null) {
+  private function getReleaseCheckURL($tag = null)
+  {
     $rcConfURL = $this->config->getFederation()['releaseCheckResultsURL'];
 
     if (!$tag || !$rcConfURL) {
@@ -342,43 +436,54 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showAddOrganizationIdForm($entitiesId, $currentOrgId) {
-    printf ('          <form action="." method="POST">
+  public function showAddOrganizationIdForm($entitiesId, $currentOrgId)
+  {
+    printf(
+      '          <form action="." method="POST">
             <input type="hidden" name="action" value="addOrganization2Entity">
             <input type="hidden" name="Entity" value="%d">
             Select Organization for entity :
-            <select name="organizationId">%s', $entitiesId, "\n");
+            <select name="organizationId">%s',
+      $entitiesId,
+      "\n"
+    );
     $organizationHandler = $this->config->getDb()->prepare(
       "SELECT `data` AS OrganizationDisplayName
       FROM `Organization`
       WHERE `entity_id` = :Id AND
         `element` = 'OrganizationDisplayName' AND
-        `lang` = 'en';");
+        `lang` = 'en';"
+    );
     $organizationInfoHandler = $this->config->getDb()->prepare(
       "SELECT `id`, `OrganizationDisplayName`
       FROM `OrganizationInfo`, `OrganizationInfoData`
       WHERE `notMemberAfter` IS NULL AND
         `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
         `lang` = 'en'
-      ORDER BY `OrganizationDisplayName`;");
+      ORDER BY `OrganizationDisplayName`;"
+    );
     $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
     $organizationInfoHandler->execute();
-    if (!$organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)){
+    if (!$organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $organization['OrganizationDisplayName'] = 'NotFound';
     }
     printf('              <option value="0">New Organization</option>%s', "\n");
     while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($currentOrgId == 0) {
-        $selected = $organizationInfo['OrganizationDisplayName'] == $organization['OrganizationDisplayName'] ? self::HTML_SELECTED : '';
+        $selected = $organizationInfo['OrganizationDisplayName'] == $organization['OrganizationDisplayName']
+          ? self::HTML_SELECTED : '';
       } else {
         $selected = $organizationInfo['id'] == $currentOrgId ? self::HTML_SELECTED : '';
       }
-      printf('              <option value="%d"%s>%s</option>%s',
-        $organizationInfo['id'], $selected,
+      printf(
+        '              <option value="%d"%s>%s</option>%s',
+        $organizationInfo['id'],
+        $selected,
         htmlspecialchars($organizationInfo['OrganizationDisplayName']),
-        "\n");
+        "\n"
+      );
     }
-    printf ('            </select>
+    printf('            </select>
             <button type="submit">Connect</button>
           </form>');
   }
@@ -396,11 +501,13 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showOrganizationInfo($entitiesId, $allowEdit = false, $admin = false, $organizationErrors = false) {
+  public function showOrganizationInfo($entitiesId, $allowEdit = false, $admin = false, $organizationErrors = false)
+  {
     $entityHandler = $this->config->getDb()->prepare(
       'SELECT `OrganizationInfo_id`, `status`
       FROM `Entities`
-      WHERE `id` = :Id;');
+      WHERE `id` = :Id;'
+    );
     $entityHandler->execute(array(self::BIND_ID => $entitiesId));
     if (($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) && ($allowEdit || $admin || $organizationErrors)) {
       $this->showCollapse('OrganizationInfo', 'OrganizationInfo', false, 0, $organizationErrors, false, $entitiesId, 0);
@@ -412,16 +519,33 @@ class MetadataDisplay extends Display\Common {
 
       if ($allowEdit || $admin) {
         if ($entity['OrganizationInfo_id'] > 0 && $entity['status'] == 3 && $organizationErrors) {
-          printf('          <a href="./?action=copyDefaultOrganization&Entity=%d"><button>%s</button></a>%s',
-            $entitiesId, 'Import the selected organization information to this Draft', "\n");
+          printf(
+            '          <a href="./?action=copyDefaultOrganization&Entity=%d"><button>%s</button></a>%s',
+            $entitiesId,
+            'Import the selected organization information to this Draft',
+            "\n"
+          );
         } elseif ($entity['OrganizationInfo_id'] == 0) {
           if ($admin) {
-            printf('          <br><br><form action="." method="POST"><input type="hidden" name="action" value="createOrganizationFromEntity"><input type="hidden" name="Entity" value="%d"><button>%s</button></form><br><br>%s',
-              $entitiesId, 'Create new organization based on this entity', "\n");
+            printf(
+              '          <br><br><form action="." method="POST">
+            <input type="hidden" name="action" value="createOrganizationFromEntity">
+            <input type="hidden" name="Entity" value="%d">
+            <button>%s</button></form><br><br>%s',
+              $entitiesId,
+              'Create new organization based on this entity',
+              "\n"
+            );
           }
-          printf('          Please select your organization.<br>
-          If this is a organization not already existing in %s, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
-            $this->config->getFederation()['displayName'], $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
+          printf(
+            '          Please select your organization.<br>
+          If this is a organization not already existing in %s, keep "New Organization" in the dropdown' .
+            ' list and inform %s (%s) during publication.<br>%s',
+            $this->config->getFederation()['displayName'],
+            $this->config->getFederation()['teamName'],
+            $this->config->getFederation()['teamMail'],
+            "\n"
+          );
         }
         $this->showAddOrganizationIdForm($entitiesId, $entity['OrganizationInfo_id']);
       } else {
@@ -443,24 +567,33 @@ class MetadataDisplay extends Display\Common {
    *
    * @return array
    */
-  private function printDefaultOrganizationInfo($id) {
+  private function printDefaultOrganizationInfo($id)
+  {
+    $organizationDefaults = [];
     $organizationInfoHandler = $this->config->getDb()->prepare(
       'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
       FROM `OrganizationInfoData`
       WHERE `OrganizationInfo_id`= :Id
-      ORDER BY `lang`;');
+      ORDER BY `lang`;'
+    );
     $organizationInfoHandler->execute(array(self::BIND_ID => $id));
-    printf ('%s          <b>Information for your organization :</b>
+    printf('%s          <b>Information for your organization :</b>
           <ul>%s', "\n", "\n");
     while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-      $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
+      $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] =
+        $organizationInfo['OrganizationDisplayName'];
       $organizationDefaults['OrganizationName'][$organizationInfo['lang']] = $organizationInfo['OrganizationName'];
       $organizationDefaults['OrganizationURL'][$organizationInfo['lang']] = $organizationInfo['OrganizationURL'];
     }
     foreach ($organizationDefaults as $element => $elementData) {
       foreach ($elementData as $lang => $value) {
-        printf ('            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
-          $element, $lang, htmlspecialchars($value), "\n");
+        printf(
+          '            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
+          $element,
+          $lang,
+          htmlspecialchars($value),
+          "\n"
+        );
       }
     }
     printf('          </ul>%s', "\n",);
@@ -478,19 +611,26 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults) {
+  private function compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults)
+  {
     $this->showNewCol();
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
       FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
     $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
-    printf ('%s          <b>Found in Metadata/Organization :</b>
+    printf('%s          <b>Found in Metadata/Organization :</b>
           <ul>%s', "\n", "\n");
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      $state = (isset ($organizationDefaults[$organization['element']][$organization['lang']])
+      $state = (isset($organizationDefaults[$organization['element']][$organization['lang']])
         && $organizationDefaults[$organization['element']][$organization['lang']] <> $organization['data'] )
         ? 'danger' : 'dark';
-      printf ('            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
-        $state, $organization['element'], $organization['lang'], $organization['data'], "\n");
+      printf(
+        '            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
+        $state,
+        $organization['element'],
+        $organization['lang'],
+        $organization['data'],
+        "\n"
+      );
     }
     printf('          </ul>%s', "\n",);
   }
@@ -506,23 +646,27 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showIMPS($entityId, $allowEdit = false, $expanded = false) {
+  public function showIMPS($entityId, $allowEdit = false, $expanded = false)
+  {
     $impsListHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `name`, `maximumAL`
-      FROM `IMPS`;');
+      FROM `IMPS`;'
+    );
     $displayNameHandler = $this->config->getDb()->prepare(
       "SELECT `data`
       FROM `Organization`
       WHERE `element` = 'OrganizationName'
-        AND  `lang`='sv'
-        AND `entity_id` = :Id;");
+        AND  `lang` = 'sv'
+        AND `entity_id` = :Id;"
+    );
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `maximumAL`, `lastValidated`, `lastUpdated` , `email`, `fullName`,
         NOW() - INTERVAL 10 MONTH AS `warnDate`,
         NOW() - INTERVAL 12 MONTH AS `errorDate`
       FROM `IdpIMPS`, `IMPS`
       LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
-      WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND `IdpIMPS`.`entity_id` = :Id;');
+      WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND `IdpIMPS`.`entity_id` = :Id;'
+    );
     $impsHandler->execute(array(self::BIND_ID => $entityId));
 
     $this->showCollapse('IMPS', 'IMPS', false, 0, $expanded, false, $entityId, 0);
@@ -531,25 +675,39 @@ class MetadataDisplay extends Display\Common {
         $state = $imps['warnDate'] > $imps['lastValidated'] ? 'warning' : 'none';
         $state = $imps['errorDate'] > $imps['lastValidated'] ? 'danger' : $state;
 
-        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : htmlspecialchars($imps['fullName']) . " (" . htmlspecialchars($imps['email']) . ")";
-        printf ('%s          <div class="alert-%s">
+        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0, 10)
+          ? '(BoT)' : htmlspecialchars($imps['fullName']) . " (" . htmlspecialchars($imps['email']) . ")";
+        printf(
+          '%s          <div class="alert-%s">
             <b><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></b>
             <ul>
               <li>Accepted by Board of Trustees : %s</li>
               <li>Last validated : %s</li>
               <li>Last validated by : %s</li>
             </ul>',
-          "\n", $state, $imps['id'], $imps['id'], htmlspecialchars($imps['name']), substr($imps['lastUpdated'], 0, 10),
-          substr($imps['lastValidated'], 0, 10), $validatedBy);
+          "\n",
+          $state,
+          $imps['id'],
+          $imps['id'],
+          htmlspecialchars($imps['name']),
+          substr($imps['lastUpdated'], 0, 10),
+          substr($imps['lastValidated'], 0, 10),
+          $validatedBy
+        );
         if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
-          printf ('%s            <b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.
+          printf('%s            <b>Updated IMPS required!</b><br>' .
+            'Current approved IMPS is based on a earlier version of the assurance profile.
           </div>', "\n");
         } else {
-        printf ('%s            <a href=".?action=Confirm+IMPS&Entity=%d&ImpsId=%d">
+          printf(
+            '%s            <a href=".?action=Confirm+IMPS&Entity=%d&ImpsId=%d">
               <button type="button" class="btn btn-primary">Validate</button>
             </a>
           </div>',
-          "\n", $entityId, $imps['id']);
+            "\n",
+            $entityId,
+            $imps['id']
+          );
         }
         $imps = $impsHandler->fetch(PDO::FETCH_ASSOC);
       }
@@ -560,24 +718,28 @@ class MetadataDisplay extends Display\Common {
           $displayName['data'] = 'Unknown';
         }
         $impsListHandler->execute();
-        printf ('%s          <div class="alert alert-danger" role="alert">
+        printf('%s          <div class="alert alert-danger" role="alert">
             IdP is not bound to any IMPS<br>
             Bind to :
             <form action="." method="POST">
               <input type="hidden" name="action" value="AddImps2IdP">
               <input type="hidden" name="Entity" value="%d">
               <select name="ImpsId">', "\n", $entityId);
-        while ($imps = $impsListHandler->fetch(PDO::FETCH_ASSOC)){
-          printf ('                <option%s value="%d">%s</option>',
-          $imps['name'] == $displayName['data'] ? self::HTML_SELECTED : '', $imps['id'], htmlspecialchars($imps['name']));
+        while ($imps = $impsListHandler->fetch(PDO::FETCH_ASSOC)) {
+          printf(
+            '                <option%s value="%d">%s</option>',
+            $imps['name'] == $displayName['data'] ? self::HTML_SELECTED : '',
+            $imps['id'],
+            htmlspecialchars($imps['name'])
+          );
         }
-        printf ('
+        printf('
               </select>
               <input type="submit" value="Bind">
             </form>
           </div>');
       } else {
-        printf ('%s          <div class="alert alert-danger" role="alert">
+        printf('%s          <div class="alert alert-danger" role="alert">
             IdP is not bound to any IMPS
           </div>', "\n");
       }
@@ -588,7 +750,7 @@ class MetadataDisplay extends Display\Common {
   /**
    * Shows EntityAttributes if exists
    *
-   * @param int $entitiesId Id of entity
+   * @param int $entityId Id of entity
    *
    * @param int $oldEntityId Id of old entity
    *
@@ -596,15 +758,24 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showEntityAttributes($entityId, $oldEntityId=0, $allowEdit = false) {
+  public function showEntityAttributes($entityId, $oldEntityId = 0, $allowEdit = false)
+  {
     if ($allowEdit) {
-      $this->showCollapse('EntityAttributes', 'Attributes', false, 0, true, 'EntityAttributes',
-        $entityId, $oldEntityId);
+      $this->showCollapse(
+        'EntityAttributes',
+        'Attributes',
+        false,
+        0,
+        true,
+        'EntityAttributes',
+        $entityId,
+        $oldEntityId
+      );
     } else {
       $this->showCollapse('EntityAttributes', 'Attributes', false, 0, true, false, $entityId, $oldEntityId);
     }
     $this->showEntityAttributesPart($entityId, $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol();
       $this->showEntityAttributesPart($oldEntityId, $entityId, false);
     }
@@ -620,7 +791,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @param bool $added if this is the added or Old entity
    */
-  private function showEntityAttributesPart($entityId, $otherEntityId, $added) {
+  private function showEntityAttributesPart($entityId, $otherEntityId, $added)
+  {
     $standardAttributes = $this->getAttributeDefs()->getStandardEntityAttributes();
 
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
@@ -653,11 +825,16 @@ class MetadataDisplay extends Display\Common {
       if (isset($standardAttributes[$type][$value])) {
         $error = ($standardAttributes[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
       }
-      ?>
-
-          <b><?=$type?></b>
+      printf(
+        '
+          <b>%s</b>
           <ul>
-            <li><div<?=$error?>><span class="text-<?=$state?>"><?=htmlspecialchars($value)?></span></div></li><?php
+            <li><div%s><span class="text-%s">%s</span></div></li>',
+        $type,
+        $error,
+        $state,
+        htmlspecialchars($value)
+      );
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         $type = $attribute['type'];
@@ -674,10 +851,16 @@ class MetadataDisplay extends Display\Common {
         }
         if ($oldType != $type) {
           print "\n          </ul>";
-          printf ("\n          <b>%s</b>\n          <ul>", $type);
+          printf("\n          <b>%s</b>\n          <ul>", $type);
           $oldType = $type;
         }
-        printf ('%s            <li><div%s><span class="text-%s">%s</span></div></li>', "\n", $error, $state, htmlspecialchars($value));
+        printf(
+          '%s            <li><div%s><span class="text-%s">%s</span></div></li>',
+          "\n",
+          $error,
+          $state,
+          htmlspecialchars($value)
+        );
       }?>
 
           </ul><?php
@@ -687,7 +870,7 @@ class MetadataDisplay extends Display\Common {
   /**
    * Shows IdP info
    *
-   * @param int $entitiesId Id of entity
+   * @param int $entityId Id of entity
    *
    * @param int $oldEntityId Id of old entity
    *
@@ -697,7 +880,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showIdP($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
+  public function showIdP($entityId, $oldEntityId = 0, $allowEdit = false, $removable = false)
+  {
     if ($removable) {
       $removable = 'SSO';
     }
@@ -707,7 +891,7 @@ class MetadataDisplay extends Display\Common {
             <div class="col-6">';
     $this->showErrorURL($entityId, $oldEntityId, true, $allowEdit);
     $this->showScopes($entityId, $oldEntityId, true, $allowEdit);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showErrorURL($oldEntityId, $entityId);
       $this->showScopes($oldEntityId, $entityId);
@@ -715,26 +899,50 @@ class MetadataDisplay extends Display\Common {
     print '
             </div><!-- end col -->
           </div><!-- end row -->';
-    $this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 3, true,
-      $allowEdit ? 'IdPMDUI' : false, $entityId, $oldEntityId);
+    $this->showCollapse(
+      'MDUI',
+      'UIInfo_IDPSSO',
+      false,
+      3,
+      true,
+      $allowEdit ? 'IdPMDUI' : false,
+      $entityId,
+      $oldEntityId
+    );
     $this->showMDUI($entityId, 'IDPSSO', $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showMDUI($oldEntityId, 'IDPSSO', $entityId);
     }
     $this->showCollapseEnd('UIInfo_IdPSSO', 3);
-    $this->showCollapse('DiscoHints', 'DiscoHints', false, 3, true,
-      $allowEdit ? 'DiscoHints' : false, $entityId, $oldEntityId);
+    $this->showCollapse(
+      'DiscoHints',
+      'DiscoHints',
+      false,
+      3,
+      true,
+      $allowEdit ? 'DiscoHints' : false,
+      $entityId,
+      $oldEntityId
+    );
     $this->showDiscoHints($entityId, $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showDiscoHints($oldEntityId, $entityId);
     }
     $this->showCollapseEnd('DiscoHints', 3);
-    $this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 3, true,
-      $allowEdit ? 'IdPKeyInfo' : false, $entityId, $oldEntityId);
+    $this->showCollapse(
+      'KeyInfo',
+      'KeyInfo_IdPSSO',
+      false,
+      3,
+      true,
+      $allowEdit ? 'IdPKeyInfo' : false,
+      $entityId,
+      $oldEntityId
+    );
     $this->showKeyInfo($entityId, 'IDPSSO', $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'IDPSSO', $entityId);
     }
@@ -745,7 +953,7 @@ class MetadataDisplay extends Display\Common {
   /**
    * Shows SP info
    *
-   * @param int $entitiesId Id of entity
+   * @param int $entityId Id of entity
    *
    * @param int $oldEntityId Id of old entity
    *
@@ -755,7 +963,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showSp($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
+  public function showSp($entityId, $oldEntityId = 0, $allowEdit = false, $removable = false)
+  {
     global $config;
     if ($removable) {
       $removable = 'SSO';
@@ -763,43 +972,76 @@ class MetadataDisplay extends Display\Common {
     $this->showCollapse('SP data', 'SP', true, 0, true, $removable, $entityId);
     $this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 3, true, $allowEdit ? 'SPMDUI' : false, $entityId, $oldEntityId);
     $this->showMDUI($entityId, 'SPSSO', $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showMDUI($oldEntityId, 'SPSSO', $entityId);
     }
     $this->showCollapseEnd('UIInfo_SPSSO', 3);
 
     if ($config->getFederation()['storeServiceInfo']) {
-        $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 3, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
+      $this->showCollapse(
+        'ServiceInfo',
+        'ServiceInfo_SPSSO',
+        false,
+        3,
+        true,
+        $allowEdit ? 'SPServiceInfo' : false,
+        $entityId,
+        $oldEntityId
+      );
 
-        $this->showServiceInfo($entityId, $oldEntityId, $allowEdit, true);
-        if ($oldEntityId != 0 ) {
-          $this->showNewCol(3);
-          $this->showServiceInfo($oldEntityId, $entityId, $allowEdit);
-        }
-        $this->showCollapseEnd('ServiceInfo_SPSSO', 3);
+      $this->showServiceInfo($entityId, $oldEntityId, $allowEdit, true);
+      if ($oldEntityId != 0) {
+        $this->showNewCol(3);
+        $this->showServiceInfo($oldEntityId, $entityId, $allowEdit);
+      }
+      $this->showCollapseEnd('ServiceInfo_SPSSO', 3);
     }
 
-    $this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 3, true,
-      $allowEdit ? 'SPKeyInfo' : false, $entityId, $oldEntityId);
+    $this->showCollapse(
+      'KeyInfo',
+      'KeyInfo_SPSSO',
+      false,
+      3,
+      true,
+      $allowEdit ? 'SPKeyInfo' : false,
+      $entityId,
+      $oldEntityId
+    );
     $this->showKeyInfo($entityId, 'SPSSO', $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'SPSSO', $entityId);
     }
     $this->showCollapseEnd('KeyInfo_SPSSO', 3);
-    $this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 3, true,
-      $allowEdit ? 'AttributeConsumingService' : false, $entityId, $oldEntityId);
+    $this->showCollapse(
+      'AttributeConsumingService',
+      'AttributeConsumingService',
+      false,
+      3,
+      true,
+      $allowEdit ? 'AttributeConsumingService' : false,
+      $entityId,
+      $oldEntityId
+    );
     $this->showAttributeConsumingService($entityId, $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showAttributeConsumingService($oldEntityId, $entityId);
     }
     $this->showCollapseEnd('AttributeConsumingService', 3);
-    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 3, false,
-      $allowEdit ? 'DiscoveryResponse' : false, $entityId, $oldEntityId);
+    $this->showCollapse(
+      'DiscoveryResponse',
+      'DiscoveryResponse',
+      false,
+      3,
+      false,
+      $allowEdit ? 'DiscoveryResponse' : false,
+      $entityId,
+      $oldEntityId
+    );
     $this->showDiscoveryResponse($entityId, $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showDiscoveryResponse($oldEntityId, $entityId);
     }
@@ -810,7 +1052,7 @@ class MetadataDisplay extends Display\Common {
   /**
    * Show AttributeAuthority info
    *
-   * @param int $entitiesId Id of entity
+   * @param int $entityId Id of entity
    *
    * @param int $oldEntityId Id of old entity
    *
@@ -820,15 +1062,24 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showAA($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
+  public function showAA($entityId, $oldEntityId = 0, $allowEdit = false, $removable = false)
+  {
     if ($removable) {
       $removable = 'SSO';
     }
     $this->showCollapse('AttributeAuthority', 'AttributeAuthority', true, 0, true, $removable, $entityId);
-    $this->showCollapse('KeyInfo', 'KeyInfo_AttributeAuthority', false, 3, true,
-      $allowEdit ? 'AAKeyInfo' : false, $entityId, $oldEntityId);
+    $this->showCollapse(
+      'KeyInfo',
+      'KeyInfo_AttributeAuthority',
+      false,
+      3,
+      true,
+      $allowEdit ? 'AAKeyInfo' : false,
+      $entityId,
+      $oldEntityId
+    );
     $this->showKeyInfo($entityId, 'AttributeAuthority', $oldEntityId, true);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'AttributeAuthority', $entityId);
     }
@@ -849,7 +1100,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showErrorURL($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
+  private function showErrorURL($entityId, $otherEntityId = 0, $added = false, $allowEdit = false)
+  {
     $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
       FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
     if ($otherEntityId) {
@@ -867,9 +1119,12 @@ class MetadataDisplay extends Display\Common {
     }
     $errorURLHandler->bindParam(self::BIND_ID, $entityId);
     $errorURLHandler->execute();
-    $edit = $allowEdit ?
-      sprintf(' <a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>',
-      $entityId, $otherEntityId) : '';
+    $edit = $allowEdit
+      ? sprintf(
+        ' <a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>',
+        $entityId,
+        $otherEntityId
+      ) : '';
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
       $thisURL = $errorURL['URL'];
     } else {
@@ -879,12 +1134,17 @@ class MetadataDisplay extends Display\Common {
     if ($otherEntityId) {
       $state = $thisURL == $otherURL ? 'dark' : $state;
     }
-    printf('%s              <b>errorURL%s</b>
+    printf(
+      '%s              <b>errorURL%s</b>
               <ul><li>
-                <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">',
-      "\n", $edit, $state);
+                <p class="text-%s" style="white-space: nowrap;overflow: hidden;
+                  text-overflow: ellipsis;max-width: 30em;">',
+      "\n",
+      $edit,
+      $state
+    );
     if ($thisURL != '') {
-      printf (self::HTML_TARGET_BLANK, htmlspecialchars($thisURL), $state, htmlspecialchars($thisURL));
+      printf(self::HTML_TARGET_BLANK, htmlspecialchars($thisURL), $state, htmlspecialchars($thisURL));
     } else {
       print 'Missing';
     }
@@ -904,7 +1164,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showScopes($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
+  private function showScopes($entityId, $otherEntityId = 0, $added = false, $allowEdit = false)
+  {
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id;');
     if ($otherEntityId) {
       $scopesHandler->bindParam(self::BIND_ID, $otherEntityId);
@@ -913,9 +1174,12 @@ class MetadataDisplay extends Display\Common {
         $otherScopes[$scope['scope']] = $scope['regexp'];
       }
     }
-    $edit = $allowEdit ?
-      sprintf(' <a href="?edit=IdPScopes&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>',
-      $entityId, $otherEntityId) : '';
+    $edit = $allowEdit
+      ? sprintf(
+        ' <a href="?edit=IdPScopes&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>',
+        $entityId,
+        $otherEntityId
+      ) : '';
     print "\n              <b>Scopes$edit</b>
               <ul>\n";
     $scopesHandler->bindParam(self::BIND_ID, $entityId);
@@ -923,13 +1187,18 @@ class MetadataDisplay extends Display\Common {
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($otherEntityId) {
         $state = ($added) ? 'success' : 'danger';
-        $state = (isset($otherScopes[$scope['scope']]) && $otherScopes[$scope['scope']] == $scope['regexp']) ?
-          'dark' : $state;
+        $state = (isset($otherScopes[$scope['scope']]) && $otherScopes[$scope['scope']] == $scope['regexp'])
+          ? 'dark' : $state;
       } else {
         $state = 'dark';
       }
-      printf ('                <li><span class="text-%s">%s (regexp="%s")</span></li>%s',
-        $state, htmlspecialchars($scope['scope']), $scope['regexp'] ? self::HTML_TRUE : 'false', "\n");
+      printf(
+        '                <li><span class="text-%s">%s (regexp="%s")</span></li>%s',
+        $state,
+        htmlspecialchars($scope['scope']),
+        $scope['regexp'] ? self::HTML_TRUE : 'false',
+        "\n"
+      );
     }
     print '              </ul>';
   }
@@ -947,7 +1216,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showMDUI($entityId, $type, $otherEntityId = 0, $added = false) {
+  private function showMDUI($entityId, $type, $otherEntityId = 0, $added = false)
+  {
     $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data`
       FROM `Mdui` WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `lang`, `element`;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
@@ -957,18 +1227,19 @@ class MetadataDisplay extends Display\Common {
     $urlHandler = $this->config->getDb()->prepare('SELECT `nosize`, `height`, `width` FROM `URLs` WHERE `URL` = :URL;');
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
-      $size = $mdui['height'].'x'.$mdui['width'];
-      if (! isset($otherMDUIElements[$mdui['lang']]) ) {
+      $size = $mdui['height'] . 'x' . $mdui['width'];
+      if (! isset($otherMDUIElements[$mdui['lang']])) {
         $otherMDUIElements[$mdui['lang']] = array();
       }
-      if (! isset($otherMDUIElements[$mdui['lang']][$element]) ) {
+      if (! isset($otherMDUIElements[$mdui['lang']][$element])) {
         $otherMDUIElements[$mdui['lang']][$element] = array();
       }
       $otherMDUIElements[$mdui['lang']][$element][$size] = array(
-          'value' => $mdui['data'],
-          'height' => $mdui['height'],
-          'width' => $mdui['width'],
-          'state' => 'removed');
+        'value' => $mdui['data'],
+        'height' => $mdui['height'],
+        'width' => $mdui['width'],
+        'state' => 'removed'
+      );
     }
 
     $oldLang = 'xxxxxxx';
@@ -981,24 +1252,34 @@ class MetadataDisplay extends Display\Common {
         if (isset(self::LANG_CODES[$lang])) {
           $fullLang = self::LANG_CODES[$lang];
         } elseif ($lang == "") {
-          $fullLang = sprintf("(NOT ALLOWED - switch to %s)", implode('/', $this->config->getFederation()['languages']));
+          $fullLang = sprintf(
+            '(NOT ALLOWED - switch to %s)',
+            implode('/', $this->config->getFederation()['languages'])
+          );
         } else {
           $fullLang = "Unknown";
         }
 
-        printf('%s                <b>Lang = "%s" - %s</b>%s                <ul>',
-          $showEndUL ? "\n                </ul>\n" : "\n", $lang, $fullLang, "\n");
+        printf(
+          '%s                <b>Lang = "%s" - %s</b>%s                <ul>',
+          $showEndUL ? "\n                </ul>\n" : "\n",
+          $lang,
+          $fullLang,
+          "\n"
+        );
         $showEndUL = true;
         $oldLang = $lang;
       }
       $element = $mdui['element'];
-      $size = $mdui['height'].'x'.$mdui['width'];
+      $size = $mdui['height'] . 'x' . $mdui['width'];
       $data = $mdui['data'];
       if ($otherEntityId) {
         $state = ($added) ? 'success' : 'danger';
-        if (isset ($otherMDUIElements[$lang]) &&
-          isset ($otherMDUIElements[$lang][$element]) &&
-          isset ($otherMDUIElements[$lang][$element][$size])) {
+        if (
+          isset($otherMDUIElements[$lang]) &&
+          isset($otherMDUIElements[$lang][$element]) &&
+          isset($otherMDUIElements[$lang][$element][$size])
+        ) {
           if ($otherMDUIElements[$lang][$element][$size]['value'] == $data) {
             $state = 'dark';
             $otherMDUIElements[$lang][$element][$size]['state'] = 'same';
@@ -1010,7 +1291,7 @@ class MetadataDisplay extends Display\Common {
         $state = 'dark';
       }
       switch ($element) {
-        case 'Logo' :
+        case 'Logo':
           $urlHandler->execute(array(self::BIND_URL => $data));
           $statusText = '';
           if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1021,31 +1302,55 @@ class MetadataDisplay extends Display\Common {
               if ($urlInfo['height'] == 0) {
                 $statusText .= '<br><span class="text-danger">Image cannot be loaded from URL.</span>';
               } else {
-                $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
-                  $mdui['height'], $urlInfo['height']);
+                $statusText .= sprintf(
+                  '<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
+                  $mdui['height'],
+                  $urlInfo['height']
+                );
               }
             }
             if ($urlInfo['width'] != $mdui['width'] && $urlInfo['nosize'] == 0 && $urlInfo['width'] != 0) {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
-              $statusText .= sprintf('<br><span class="text-danger">Marked width is %s but actual width is %d</span>',
-                $mdui['width'], $urlInfo['width']);
+              $statusText .= sprintf(
+                '<br><span class="text-danger">Marked width is %s but actual width is %d</span>',
+                $mdui['width'],
+                $urlInfo['width']
+              );
             }
           } else {
             $statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
           }
-          $data = sprintf (self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
-          printf ('%s                  <li>%s <span class="text-%s">%s (%s) = %s</span>%s</li>',
-            "\n", $statusIcon, $state, $element, $size, $data, $statusText);
+          $data = sprintf(self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
+          printf(
+            '%s                  <li>%s <span class="text-%s">%s (%s) = %s</span>%s</li>',
+            "\n",
+            $statusIcon,
+            $state,
+            $element,
+            $size,
+            $data,
+            $statusText
+          );
           break;
-        case 'InformationURL' :
-        case 'PrivacyStatementURL' :
-          $data = sprintf (self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
-          printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
-          "\n", $state, $element, $data);
+        case 'InformationURL':
+        case 'PrivacyStatementURL':
+          $data = sprintf(self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
+          printf(
+            '%s                  <li><span class="text-%s">%s = %s</span></li>',
+            "\n",
+            $state,
+            $element,
+            $data
+          );
           break;
-        default :
-          printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
-          "\n", $state, $element, htmlspecialchars($data));
+        default:
+          printf(
+            '%s                  <li><span class="text-%s">%s = %s</span></li>',
+            "\n",
+            $state,
+            $element,
+            htmlspecialchars($data)
+          );
       }
     }
     if ($showEndUL) {
@@ -1066,7 +1371,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showServiceInfo($entityId, $otherEntityId=0, $allowEdit=false, $added = false) {
+  private function showServiceInfo($entityId, $otherEntityId = 0, $allowEdit = false, $added = false)
+  {
     global $userLevel;
 
     $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled`
@@ -1102,11 +1408,17 @@ class MetadataDisplay extends Display\Common {
     $data = $serviceURL ? htmlspecialchars($serviceURL) . $enabled_txt : 'Not provided';
     # Allow updating the ServiceInfo if the user is an admin
     # (but not for the "old" metadata, and skip if we show the edit icon anyway)
-    $extra = !$allowEdit && $added && $userLevel > 19 ? sprintf(' <a href="./?edit=SPServiceInfo&Entity=%d&oldEntity=%d"><button>Update</button></a>', $entityId, $otherEntityId) : '';
-    printf ('%s                <b>URL to access this service (for use in service catalog)</b>', "\n");
-    printf ('%s                <ul>', "\n");
-    printf ('%s                  <li><span class="text-%s">%s</span>%s</li>', "\n", $state, $data, $extra);
-    printf ('%s                </ul>', "\n");
+    $extra = !$allowEdit && $added && $userLevel > 19
+      ? sprintf(
+        ' <a href="./?edit=SPServiceInfo&Entity=%d&oldEntity=%d"><button>Update</button></a>',
+        $entityId,
+        $otherEntityId
+      )
+      : '';
+    printf('%s                <b>URL to access this service (for use in service catalog)</b>', "\n");
+    printf('%s                <ul>', "\n");
+    printf('%s                  <li><span class="text-%s">%s</span>%s</li>', "\n", $state, $data, $extra);
+    printf('%s                </ul>', "\n");
   }
 
   /**
@@ -1120,7 +1432,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showDiscoHints($entityId, $otherEntityId=0, $added = false) {
+  private function showDiscoHints($entityId, $otherEntityId = 0, $added = false)
+  {
     $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data`
       FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
     $otherMDUIElements = array();
@@ -1128,7 +1441,7 @@ class MetadataDisplay extends Display\Common {
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
-      if (! isset($otherMDUIElements[$element]) ) {
+      if (! isset($otherMDUIElements[$element])) {
         $otherMDUIElements[$element] = array();
       }
       $otherMDUIElements[$element][$mdui['data']] = true;
@@ -1142,21 +1455,25 @@ class MetadataDisplay extends Display\Common {
       $element = $mdui['element'];
       $data = $mdui['data'];
       if ($oldElement != $element) {
-        printf('%s                <b>%s</b>%s                <ul>',
-          $showEndUL ? "\n                </ul>\n" : "\n", $element, "\n");
+        printf(
+          '%s                <b>%s</b>%s                <ul>',
+          $showEndUL ? "\n                </ul>\n" : "\n",
+          $element,
+          "\n"
+        );
         $showEndUL = true;
         $oldElement = $element;
       }
 
       if ($otherEntityId) {
         $state = ($added) ? 'success' : 'danger';
-        if (isset ($otherMDUIElements[$element]) && isset ($otherMDUIElements[$element][$data])) {
+        if (isset($otherMDUIElements[$element]) && isset($otherMDUIElements[$element][$data])) {
           $state = 'dark';
         }
       } else {
         $state = 'dark';
       }
-      printf ('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, htmlspecialchars($data));
+      printf('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, htmlspecialchars($data));
     }
     if ($showEndUL) {
       print "\n                </ul>";
@@ -1177,7 +1494,8 @@ class MetadataDisplay extends Display\Common {
    * @return void
    */
 
-  private function showKeyInfo($entityId, $type, $otherEntityId=0, $added = false) {
+  private function showKeyInfo($entityId, $type, $otherEntityId = 0, $added = false)
+  {
     $keyInfoStatusHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`
       FROM `KeyInfo` WHERE `entity_id` = :Id AND `type` = :Type;');
     $keyInfoStatusHandler->bindParam(self::BIND_TYPE, $type);
@@ -1189,23 +1507,23 @@ class MetadataDisplay extends Display\Common {
     $timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
     while ($keyInfoStatus = $keyInfoStatusHandler->fetch(PDO::FETCH_ASSOC)) {
       switch ($keyInfoStatus['use']) {
-        case 'encryption' :
-          if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+        case 'encryption':
+          if ($keyInfoStatus['notValidAfter'] > $timeNow) {
             $validEncryptionFound = true;
           }
           break;
-        case 'signing' :
-          if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+        case 'signing':
+          if ($keyInfoStatus['notValidAfter'] > $timeNow) {
             $validSigningFound = true;
           }
           break;
-        case 'both' :
-          if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+        case 'both':
+          if ($keyInfoStatus['notValidAfter'] > $timeNow) {
             $validEncryptionFound = true;
             $validSigningFound = true;
           }
           break;
-        default :
+        default:
       }
     }
 
@@ -1229,31 +1547,31 @@ class MetadataDisplay extends Display\Common {
       $error = '';
       $validCertExists = false;
       switch ($keyInfo['use']) {
-        case 'encryption' :
+        case 'encryption':
           $use = 'encryption';
           if ($keyInfo['notValidAfter'] <= $timeNow && $validEncryptionFound) {
             $validCertExists = true;
           }
           break;
-        case 'signing' :
+        case 'signing':
           $use = 'signing';
           if ($keyInfo['notValidAfter'] <= $timeNow && $validSigningFound) {
             $validCertExists = true;
           }
           break;
-        case 'both' :
+        case 'both':
           $use = 'encryption & signing';
           if ($keyInfo['notValidAfter'] <= $timeNow && $validEncryptionFound &&  $validSigningFound) {
             $validCertExists = true;
           }
           break;
-        default :
+        default:
       }
-      $name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+      $name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] . ')';
 
-      if ($keyInfo['notValidAfter'] <= $timeNow ) {
+      if ($keyInfo['notValidAfter'] <= $timeNow) {
         $error = ($validCertExists) ? self::HTML_CLASS_ALERT_WARNING : self::HTML_CLASS_ALERT_DANGER;
-      } elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
+      } elseif ($keyInfo['notValidAfter'] <= $timeWarn) {
         $error = self::HTML_CLASS_ALERT_WARNING;
       }
 
@@ -1269,7 +1587,8 @@ class MetadataDisplay extends Display\Common {
       } else {
         $state = 'dark';
       }
-      printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
+      printf(
+        '%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
                 <ul%s>
                   <li>notValidAfter = %s</li>
                   <li>Subject = %s</li>
@@ -1277,8 +1596,18 @@ class MetadataDisplay extends Display\Common {
                   <li>Type / bits = %s / %d</li>
                   <li>Serial Number = %s</li>
                 </ul>',
-          "\n", $state, $use, $name, $error, $keyInfo['notValidAfter'],
-          htmlspecialchars($keyInfo['subject']), htmlspecialchars($keyInfo['issuer']), $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+        "\n",
+        $state,
+        $use,
+        $name,
+        $error,
+        $keyInfo['notValidAfter'],
+        htmlspecialchars($keyInfo['subject']),
+        htmlspecialchars($keyInfo['issuer']),
+        $keyInfo['key_type'],
+        $keyInfo['bits'],
+        $keyInfo['serialNumber']
+      );
     }
   }
 
@@ -1293,7 +1622,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showAttributeConsumingService($entityId, $otherEntityId=0, $added = false) {
+  private function showAttributeConsumingService($entityId, $otherEntityId = 0, $added = false)
+  {
     $friendlyNames = $this->getAttributeDefs()->getAttributeFriendlyNames();
 
     $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index`
@@ -1304,10 +1634,12 @@ class MetadataDisplay extends Display\Common {
       ORDER BY `element` DESC, `lang`;');
 
     $serviceElementHandler->bindParam(self::BIND_INDEX, $serviceIndex);
-    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired`
+    $requestedAttributeHandler = $this->config->getDb()->prepare(
+      'SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired`
       FROM `AttributeConsumingService_RequestedAttribute`
       WHERE `entity_id` = :Id AND `Service_index` = :Index
-      ORDER BY `isRequired` DESC, `FriendlyName`;');
+      ORDER BY `isRequired` DESC, `FriendlyName`;'
+    );
     $requestedAttributeHandler->bindParam(self::BIND_INDEX, $serviceIndex);
     if ($otherEntityId) {
       $serviceIndexHandler->bindParam(self::BIND_ID, $otherEntityId);
@@ -1338,29 +1670,36 @@ class MetadataDisplay extends Display\Common {
     while ($index = $serviceIndexHandler->fetch(PDO::FETCH_ASSOC)) {
       $serviceIndex = $index['Service_index'];
       $serviceElementHandler->execute();
-      printf ('%s                <b>Index = %d</b>%s                <ul>', "\n", $serviceIndex, "\n");
+      printf('%s                <b>Index = %d</b>%s                <ul>', "\n", $serviceIndex, "\n");
       while ($serviceElement = $serviceElementHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset(
-            $otherServiceElements[$serviceIndex][$serviceElement['element']][$serviceElement['lang']]) &&
+          $state = (
+            isset($otherServiceElements[$serviceIndex][$serviceElement['element']][$serviceElement['lang']]) &&
             $otherServiceElements[$serviceIndex][$serviceElement['element']][$serviceElement['lang']] ==
-              $serviceElement['data'] )
-              ? 'dark' : $state;
+              $serviceElement['data']
+          )
+            ? 'dark' : $state;
         } else {
           $state = 'dark';
         }
-        printf('%s                  <li><span class="text-%s">%s[%s] = %s</span></li>',
-          "\n", $state, $serviceElement['element'], $serviceElement['lang'], htmlspecialchars($serviceElement['data']));
+        printf(
+          '%s                  <li><span class="text-%s">%s[%s] = %s</span></li>',
+          "\n",
+          $state,
+          $serviceElement['element'],
+          $serviceElement['lang'],
+          htmlspecialchars($serviceElement['data'])
+        );
       }
       $requestedAttributeHandler->execute();
       print "\n                  <li>RequestedAttributes : <ul>";
       while ($requestedAttribute = $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset (
-            $otherRequestedAttributes[$serviceIndex][$requestedAttribute['Name']]) &&
-            $otherRequestedAttributes[$serviceIndex][$requestedAttribute['Name']] == $requestedAttribute['isRequired'] )
+          $state = (
+            isset($otherRequestedAttributes[$serviceIndex][$requestedAttribute['Name']]) &&
+            $otherRequestedAttributes[$serviceIndex][$requestedAttribute['Name']] == $requestedAttribute['isRequired'])
               ? 'dark' : $state;
         } else {
           $state = 'dark';
@@ -1378,18 +1717,26 @@ class MetadataDisplay extends Display\Common {
           }
         } else {
           $friendlyNameDisplay = $requestedAttribute['FriendlyName'];
-          if (isset ($friendlyNames[$requestedAttribute['Name']])) {
-            if ($requestedAttribute['FriendlyName'] != $friendlyNames[$requestedAttribute['Name']]['desc']
-              || ! $friendlyNames[$requestedAttribute['Name']]['standard']) {
+          if (isset($friendlyNames[$requestedAttribute['Name']])) {
+            if (
+              $requestedAttribute['FriendlyName'] != $friendlyNames[$requestedAttribute['Name']]['desc'] ||
+              ! $friendlyNames[$requestedAttribute['Name']]['standard']
+            ) {
                 $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
             $error = self::HTML_CLASS_ALERT_WARNING;
           }
         }
-        printf('%s                    <li%s><span class="text-%s"><b>%s</b> - %s%s</span></li>',
-          "\n", $error, $state, htmlspecialchars($friendlyNameDisplay), htmlspecialchars($requestedAttribute['Name']),
-          $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
+        printf(
+          '%s                    <li%s><span class="text-%s"><b>%s</b> - %s%s</span></li>',
+          "\n",
+          $error,
+          $state,
+          htmlspecialchars($friendlyNameDisplay),
+          htmlspecialchars($requestedAttribute['Name']),
+          $requestedAttribute['isRequired'] == '1' ? ' (Required)' : ''
+        );
       }
       print "\n                  </ul></li>\n                </ul>";
     }
@@ -1406,7 +1753,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showDiscoveryResponse($entityId, $otherEntityId=0, $added = false) {
+  private function showDiscoveryResponse($entityId, $otherEntityId = 0, $added = false)
+  {
     $discoveryHandler = $this->config->getDb()->prepare('SELECT `index`, `location`
       FROM `DiscoveryResponse` WHERE `entity_id` = :Id ORDER BY `index`;');
 
@@ -1418,7 +1766,7 @@ class MetadataDisplay extends Display\Common {
     }
 
     $discoveryHandler->execute(array(self::BIND_ID => $entityId));
-    printf ('%s                <ul>%s', "\n", "\n");
+    printf('%s                <ul>%s', "\n", "\n");
     while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
       $index = $discovery['index'];
       $location = $discovery['location'];
@@ -1429,8 +1777,13 @@ class MetadataDisplay extends Display\Common {
       } else {
         $state = 'dark';
       }
-      printf ('                  <li><span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
-        $state, $index, htmlspecialchars($location), "\n");
+      printf(
+        '                  <li><span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
+        $state,
+        $index,
+        htmlspecialchars($location),
+        "\n"
+      );
     }
     print '                </ul>';
   }
@@ -1446,14 +1799,15 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showOrganization($entityId, $oldEntityId=0, $allowEdit = false) {
+  public function showOrganization($entityId, $oldEntityId = 0, $allowEdit = false)
+  {
     if ($allowEdit) {
       $this->showCollapse('Organization', 'Organization', false, 0, true, 'Organization', $entityId, $oldEntityId);
     } else {
       $this->showCollapse('Organization', 'Organization', false, 0, true, false, $entityId, $oldEntityId);
     }
     $this->showOrganizationPart($entityId, $oldEntityId, 1);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol();
       $this->showOrganizationPart($oldEntityId, $entityId, 0);
     }
@@ -1469,14 +1823,15 @@ class MetadataDisplay extends Display\Common {
    *
    * @param bool $added if this is the added or Old entity
    */
-  private function showOrganizationPart($entityId, $otherEntityId, $added) {
+  private function showOrganizationPart($entityId, $otherEntityId, $added)
+  {
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
       FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
     if ($otherEntityId) {
       $organizationHandler->bindParam(self::BIND_ID, $otherEntityId);
       $organizationHandler->execute();
       while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-        if (! isset($otherOrganizationElements[$organization['element']]) ) {
+        if (! isset($otherOrganizationElements[$organization['element']])) {
           $otherOrganizationElements[$organization['element']] = array();
         }
         $otherOrganizationElements[$organization['element']][$organization['lang']] = $organization['data'];
@@ -1488,19 +1843,33 @@ class MetadataDisplay extends Display\Common {
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($otherEntityId) {
         $state = ($added) ? 'success' : 'danger';
-        $state = (isset ($otherOrganizationElements[$organization['element']][$organization['lang']])
-          && $otherOrganizationElements[$organization['element']][$organization['lang']] == $organization['data'] )
-           ? 'dark' : $state;
+        $state = (
+          isset($otherOrganizationElements[$organization['element']][$organization['lang']]) &&
+          $otherOrganizationElements[$organization['element']][$organization['lang']] == $organization['data']
+        ) ? 'dark' : $state;
       } else {
         $state = 'dark';
       }
-      if ($organization['element'] == 'OrganizationURL' ) {
-        printf ('%s          <li><span class="text-%s">%s[%s] = <a href="%s" class="text-%s">%s</a></span></li>',
-          "\n", $state, $organization['element'], $organization['lang'],
-          htmlspecialchars($organization['data']), $state, htmlspecialchars($organization['data']));
+      if ($organization['element'] == 'OrganizationURL') {
+        printf(
+          '%s          <li><span class="text-%s">%s[%s] = <a href="%s" class="text-%s">%s</a></span></li>',
+          "\n",
+          $state,
+          $organization['element'],
+          $organization['lang'],
+          htmlspecialchars($organization['data']),
+          $state,
+          htmlspecialchars($organization['data'])
+        );
       } else {
-        printf ('%s          <li><span class="text-%s">%s[%s] = %s</span></li>',
-          "\n", $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
+        printf(
+          '%s          <li><span class="text-%s">%s[%s] = %s</span></li>',
+          "\n",
+          $state,
+          $organization['element'],
+          $organization['lang'],
+          htmlspecialchars($organization['data'])
+        );
       }
     }
     print "\n        </ul>";
@@ -1517,16 +1886,33 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showContacts($entityId, $oldEntityId=0, $allowEdit = false) {
+  public function showContacts($entityId, $oldEntityId = 0, $allowEdit = false)
+  {
     if ($allowEdit) {
-      $this->showCollapse('ContactPersons', 'ContactPersons',
-        false, 0, true, 'ContactPersons', $entityId, $oldEntityId);
+      $this->showCollapse(
+        'ContactPersons',
+        'ContactPersons',
+        false,
+        0,
+        true,
+        'ContactPersons',
+        $entityId,
+        $oldEntityId
+      );
     } else {
-      $this->showCollapse('ContactPersons', 'ContactPersons',
-        false, 0, true, false, $entityId, $oldEntityId);
+      $this->showCollapse(
+        'ContactPersons',
+        'ContactPersons',
+        false,
+        0,
+        true,
+        false,
+        $entityId,
+        $oldEntityId
+      );
     }
     $this->showContactsPart($entityId, $oldEntityId, 1);
-    if ($oldEntityId != 0 ) {
+    if ($oldEntityId != 0) {
       $this->showNewCol();
       $this->showContactsPart($oldEntityId, $entityId, 0);
     }
@@ -1544,7 +1930,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showContactsPart($entityId, $otherEntityId, $added) {
+  private function showContactsPart($entityId, $otherEntityId, $added)
+  {
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT *
       FROM `ContactPerson` WHERE `entity_id` = :Id ORDER BY `contactType`;');
     if ($otherEntityId) {
@@ -1585,83 +1972,109 @@ class MetadataDisplay extends Display\Common {
     $contactPersonHandler->execute();
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($contactPerson['subcontactType'] == '') {
-        printf ("\n        <b>%s</b><br>\n", $contactPerson['contactType']);
+        printf("\n        <b>%s</b><br>\n", $contactPerson['contactType']);
       } else {
-        printf ("\n        <b>%s[%s]</b><br>\n", $contactPerson['contactType'], $contactPerson['subcontactType']);
+        printf("\n        <b>%s[%s]</b><br>\n", $contactPerson['contactType'], $contactPerson['subcontactType']);
       }
       print "        <ul>\n";
       if ($contactPerson['company']) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset ($otherContactPersons[$contactPerson['contactType']])
+          $state = (isset($otherContactPersons[$contactPerson['contactType']])
             && $otherContactPersons[$contactPerson['contactType']]['company'] == $contactPerson['company'])
               ? 'dark' : $state;
         } else {
           $state = 'dark';
         }
-        printf ('          <li><span class="text-%s">Company = %s</span></li>%s',
-          $state, htmlspecialchars($contactPerson['company']), "\n");
+        printf(
+          '          <li><span class="text-%s">Company = %s</span></li>%s',
+          $state,
+          htmlspecialchars($contactPerson['company']),
+          "\n"
+        );
       }
       if ($contactPerson['givenName']) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset ($otherContactPersons[$contactPerson['contactType']])
-            && $otherContactPersons[$contactPerson['contactType']]['givenName'] == $contactPerson['givenName'])
-              ? 'dark' : $state;
+          $state = (
+            isset($otherContactPersons[$contactPerson['contactType']]) &&
+            $otherContactPersons[$contactPerson['contactType']]['givenName'] == $contactPerson['givenName']
+          ) ? 'dark' : $state;
         } else {
           $state = 'dark';
         }
-        printf ('          <li><span class="text-%s">GivenName = %s</span></li>%s',
-          $state, htmlspecialchars($contactPerson['givenName']), "\n");
+        printf(
+          '          <li><span class="text-%s">GivenName = %s</span></li>%s',
+          $state,
+          htmlspecialchars($contactPerson['givenName']),
+          "\n"
+        );
       }
       if ($contactPerson['surName']) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset ($otherContactPersons[$contactPerson['contactType']])
-            && $otherContactPersons[$contactPerson['contactType']]['surName'] == $contactPerson['surName'])
-              ? 'dark' : $state;
+          $state = (
+            isset($otherContactPersons[$contactPerson['contactType']]) &&
+            $otherContactPersons[$contactPerson['contactType']]['surName'] == $contactPerson['surName']
+          ) ? 'dark' : $state;
         } else {
           $state = 'dark';
         }
-        printf ('          <li><span class="text-%s">SurName = %s</span></li>%s',
-          $state, htmlspecialchars($contactPerson['surName']), "\n");
+        printf(
+          '          <li><span class="text-%s">SurName = %s</span></li>%s',
+          $state,
+          htmlspecialchars($contactPerson['surName']),
+          "\n"
+        );
       }
       if ($contactPerson['emailAddress']) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset ($otherContactPersons[$contactPerson['contactType']])
+          $state = (isset($otherContactPersons[$contactPerson['contactType']])
             && $otherContactPersons[$contactPerson['contactType']]['emailAddress'] == $contactPerson['emailAddress'])
               ? 'dark' : $state;
         } else {
           $state = 'dark';
         }
-        printf ('          <li><span class="text-%s">EmailAddress = %s</span></li>%s',
-          $state, htmlspecialchars($contactPerson['emailAddress']), "\n");
+        printf(
+          '          <li><span class="text-%s">EmailAddress = %s</span></li>%s',
+          $state,
+          htmlspecialchars($contactPerson['emailAddress']),
+          "\n"
+        );
       }
       if ($contactPerson['telephoneNumber']) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset ($otherContactPersons[$contactPerson['contactType']])
-            && $otherContactPersons[$contactPerson['contactType']]['telephoneNumber'] ==
-              $contactPerson['telephoneNumber'])
-              ? 'dark' : $state;
+          $state = (isset($otherContactPersons[$contactPerson['contactType']]) &&
+            $otherContactPersons[$contactPerson['contactType']]['telephoneNumber'] ==
+              $contactPerson['telephoneNumber']
+          ) ? 'dark' : $state;
         } else {
           $state = 'dark';
         }
-        printf ('          <li><span class="text-%s">TelephoneNumber = %s</span></li>%s',
-          $state, htmlspecialchars($contactPerson['telephoneNumber']), "\n");
+        printf(
+          '          <li><span class="text-%s">TelephoneNumber = %s</span></li>%s',
+          $state,
+          htmlspecialchars($contactPerson['telephoneNumber']),
+          "\n"
+        );
       }
       if ($contactPerson['extensions']) {
         if ($otherEntityId) {
           $state = ($added) ? 'success' : 'danger';
-          $state = (isset ($otherContactPersons[$contactPerson['contactType']])
+          $state = (isset($otherContactPersons[$contactPerson['contactType']])
             && $otherContactPersons[$contactPerson['contactType']]['extensions'] == $contactPerson['extensions'])
               ? 'dark' : $state;
         } else {
           $state = 'dark';
         }
-        printf ('          <li><span class="text-%s">Extensions = %s</span></li>%s',
-          $state, htmlspecialchars($contactPerson['extensions']), "\n");
+        printf(
+          '          <li><span class="text-%s">Extensions = %s</span></li>%s',
+          $state,
+          htmlspecialchars($contactPerson['extensions']),
+          "\n"
+        );
       }
       print "        </ul>";
     }
@@ -1670,16 +2083,21 @@ class MetadataDisplay extends Display\Common {
   /**
    * Shows MDQ Url for Entity
    *
-   * @param int $entityId EntityId of entity
+   * @param int $entityID EntityId of entity
    *
    * @return void
    */
-  public function showMdqUrl($entityID) {
+  public function showMdqUrl($entityID)
+  {
     $federation = $this->config->getFederation();
     $this->showCollapse('Signed XML in ' . $federation['displayName'], 'MDQ', false, 0, true, false, 0, 0);
     $url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
-    printf ('%s          URL at MDQ : <a href="%s">%s</a><br><br>',
-      "\n", $url, $url);
+    printf(
+      '%s          URL at MDQ : <a href="%s">%s</a><br><br>',
+      "\n",
+      $url,
+      $url
+    );
     $this->showCollapseEnd('MDQ');
   }
 
@@ -1690,8 +2108,10 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showXML($entityId) {
-    printf ('
+  public function showXML($entityId)
+  {
+    printf(
+      '
     <h4>
       <i class="fas fa-chevron-circle-right"></i>
       <a href=".?rawXML=%d" target="_blank">Show XML</a>
@@ -1700,7 +2120,10 @@ class MetadataDisplay extends Display\Common {
       <i class="fas fa-chevron-circle-right"></i>
       <a href=".?rawXML=%d&download" target="_blank">Download XML</a>
     </h4>%s',
-      $entityId, $entityId, "\n");
+      $entityId,
+      $entityId,
+      "\n"
+    );
   }
 
   /**
@@ -1712,7 +2135,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showRawXML($entityId, $urn = false) {
+  public function showRawXML($entityId, $urn = false)
+  {
     $entityHandler = $urn
       ? $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `entityID` = :Id AND `status` = 1;')
       : $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `id` = :Id;');
@@ -1740,7 +2164,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showDiff($entityId, $otherEntityId) {
+  public function showDiff($entityId, $otherEntityId)
+  {
     $this->showCollapse('XML Diff', 'XMLDiff', false, 0, false);
     $this->showXMLDiff($entityId, $otherEntityId);
     $this->showCollapseEnd('XMLDiff');
@@ -1753,7 +2178,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showEditors($entityId){
+  public function showEditors($entityId)
+  {
     global $EPPN, $userLevel;
     $this->showCollapse('Editors', 'Editors', false, 0, true, false, $entityId, 0);
     $usersHandler = $this->config->getDb()->prepare('SELECT `id`, `userID`, `email`, `fullName`
@@ -1767,9 +2193,25 @@ class MetadataDisplay extends Display\Common {
     while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
       # only global admins can remove themselves
       $can_remove = $is_admin && ( $user_id != $user['id'] || $userLevel > 19);
-      $extraButton = $can_remove ? sprintf(' <form action="." method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="action" value="removeEditor"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $user['id'], $entityId, $user['id'], $user['id']) : '';
-      printf ('          <li>%s (Identifier : %s, Email : %s)%s</li>%s',
-        htmlspecialchars($user['fullName']), htmlspecialchars($user['userID']), htmlspecialchars($user['email']), $extraButton, "\n");
+      $extraButton = $can_remove
+        ? sprintf(
+          ' <form action="." method="POST" name="removeEditor%s" style="display: inline;">' .
+          '<input type="hidden" name="action" value="removeEditor"><input type="hidden" name="Entity" value="%d">' .
+          '<input type="hidden" name="userIDtoRemove" value="%s">' .
+          '<a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>',
+          $user['id'],
+          $entityId,
+          $user['id'],
+          $user['id']
+        ) : '';
+      printf(
+        '          <li>%s (Identifier : %s, Email : %s)%s</li>%s',
+        htmlspecialchars($user['fullName']),
+        htmlspecialchars($user['userID']),
+        htmlspecialchars($user['email']),
+        $extraButton,
+        "\n"
+      );
     }
     print "        </ul>";
     $this->showCollapseEnd('Editors');
@@ -1782,35 +2224,45 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showURLStatus($url = false){
-    if($url) {
-      $urlHandler = $this->config->getDb()->prepare('SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
-        FROM `URLs` WHERE `URL` = :URL;');
+  public function showURLStatus($url = false)
+  {
+    if ($url) {
+      $urlHandler = $this->config->getDb()->prepare(
+        'SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
+        FROM `URLs` WHERE `URL` = :URL;'
+      );
       $urlHandler->bindValue(self::BIND_URL, $url);
       $urlHandler->execute();
-      $entityHandler = $this->config->getDb()->prepare('SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
-        FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL;');
+      $entityHandler = $this->config->getDb()->prepare(
+        'SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL;'
+      );
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
       $serviceInfoHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
         FROM `ServiceInfo`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `ServiceURL` = :URL;');
       $serviceInfoHandler->bindValue(self::BIND_URL, $url);
       $serviceInfoHandler->execute();
-      $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
-        FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL;');
+      $ssoUIIHandler = $this->config->getDb()->prepare(
+        'SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
+        FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL;'
+      );
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
       $ssoUIIHandler->execute();
-      $organizationHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
-        FROM `Organization`, `Entities` WHERE `entity_id` = `id` AND `data` = :URL;');
+      $organizationHandler = $this->config->getDb()->prepare(
+        'SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
+        FROM `Organization`, `Entities` WHERE `entity_id` = `id` AND `data` = :URL;'
+      );
       $organizationHandler->bindValue(self::BIND_URL, $url);
       $organizationHandler->execute();
       $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
         FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = 'entity-category';");
 
-      printf ('    <table class="table table-striped table-bordered">%s', "\n");
-      printf ('      <tr><th>URL</th><td>%s</td></tr>%s', htmlspecialchars($url), "\n");
+      printf('    <table class="table table-striped table-bordered">%s', "\n");
+      printf('      <tr><th>URL</th><td>%s</td></tr>%s', htmlspecialchars($url), "\n");
       if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('      <tr>
+        printf(
+          '      <tr>
           <th>Checked</th>
           <td>
             %s (UTC) <form action="." method="POST" style="display: inline;">
@@ -1823,38 +2275,59 @@ class MetadataDisplay extends Display\Common {
           </td>
         </tr>
         <tr><th>Status</th><td>%s</td></tr>%s',
-          $urlInfo['lastValidated'], htmlspecialchars($_REQUEST['action']), htmlspecialchars($url),
-          $urlInfo['validationOutput'], "\n");
-        if ($urlInfo['height'] > 0 && $urlInfo['width'] > 0 ) {
-          printf ('      <tr><th>Height</th><td>%s</td></tr>
+          $urlInfo['lastValidated'],
+          htmlspecialchars($_REQUEST['action']),
+          htmlspecialchars($url),
+          $urlInfo['validationOutput'],
+          "\n"
+        );
+        if ($urlInfo['height'] > 0 && $urlInfo['width'] > 0) {
+          printf('      <tr><th>Height</th><td>%s</td></tr>
         <tr><th>Width</th><td>%s</td></tr>%s', $urlInfo['height'], $urlInfo['width'], "\n");
         }
         switch ($urlInfo['validationOutput']) {
-          case 'SSL certificate problem: unable to get local issuer certificate' :
-            printf ('      <tr><th>Possible solution</th><td>You are missing intermediate certificate(s).<br>
+          case 'SSL certificate problem: unable to get local issuer certificate':
+            printf(
+              '      <tr><th>Possible solution</th><td>You are missing intermediate certificate(s).<br>
               Verify at <a href="https://www.ssllabs.com/ssltest/analyze.html?d=%s">SSL Labs</a></td></tr>%s',
-              urlencode($url), "\n");
+              urlencode($url),
+              "\n"
+            );
             break;
-          case 'Policy missing link to http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
-            printf ('      <tr><th>Possible solution</th>
+          case 'Policy missing link to http://www.geant.net/uri/dataprotection-code-of-conduct/v1': # NOSONAR
+            # Should be http://
+            printf(
+              '      <tr><th>Possible solution</th>
               <td>You are missing link / have a java-script to generate this page.<br>
               Verify with curl -s %s | grep http://www.geant.net/uri/dataprotection-code-of-conduct/v1<br>
               This should output this URL.</td></tr>%s',
-              htmlspecialchars($url), "\n");
+              htmlspecialchars($url),
+              "\n"
+            );
             break;
-          default :
-              break;
+          default:
+            break;
         }
       }
-      printf ('%s    <table class="table table-striped table-bordered">
+      printf('%s    <table class="table table-striped table-bordered">
       <tr><th>Entity</th><th>Part</th><th></tr>%s', self::HTML_TABLE_END, "\n");
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
-          $entity['entity_id'], htmlspecialchars($entity['entityID']), 'ErrorURL', "\n");
+        printf(
+          '      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
+          $entity['entity_id'],
+          htmlspecialchars($entity['entityID']),
+          'ErrorURL',
+          "\n"
+        );
       }
       while ($serviceInfo = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
-          $serviceInfo['entity_id'], htmlspecialchars($serviceInfo['entityID']), 'URL for Service Catalog', "\n");
+        printf(
+          '      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
+          $serviceInfo['entity_id'],
+          htmlspecialchars($serviceInfo['entityID']),
+          'URL for Service Catalog',
+          "\n"
+        );
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
         $ecInfo = '';
@@ -1867,17 +2340,35 @@ class MetadataDisplay extends Display\Common {
             }
           }
         }
-        if ($entity['element'] == 'Logo' || $entity['element'] == 'InformationURL' || $entity['element'] == 'PrivacyStatementURL') {
-          printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
-            $entity['entity_id'], htmlspecialchars($entity['entityID']), $this->getEntityStatusType($entity['status']),
-            substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
+        if (
+          $entity['element'] == 'Logo' ||
+          $entity['element'] == 'InformationURL' ||
+          $entity['element'] == 'PrivacyStatementURL'
+        ) {
+          printf(
+            '      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
+            $entity['entity_id'],
+            htmlspecialchars($entity['entityID']),
+            $this->getEntityStatusType($entity['status']),
+            substr($entity['type'], 0, -3),
+            $entity['element'],
+            $entity['lang'],
+            $ecInfo,
+            "\n"
+          );
         }
       }
       while ($entity = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($entity['element'] == 'OrganizationURL') {
-          printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s[%s]</td><tr>%s',
-            $entity['entity_id'], htmlspecialchars($entity['entityID']), $this->getEntityStatusType($entity['status']),
-            $entity['element'], $entity['lang'], "\n");
+          printf(
+            '      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s[%s]</td><tr>%s',
+            $entity['entity_id'],
+            htmlspecialchars($entity['entityID']),
+            $this->getEntityStatusType($entity['status']),
+            $entity['element'],
+            $entity['lang'],
+            "\n"
+          );
         }
       }
       print self::HTML_TABLE_END;
@@ -1885,7 +2376,9 @@ class MetadataDisplay extends Display\Common {
       $oldType = 0;
       $urlHandler = $this->config->getDb()->prepare(
         'SELECT `URL`, `type`, `status`, `cocov1Status`, `lastValidated`, `lastSeen`, `validationOutput`
-        FROM `URLs` WHERE `status` > 0 OR `cocov1Status` > 0 ORDER BY type DESC, `URL`;');
+        FROM `URLs` WHERE `status` > 0 OR `cocov1Status` > 0 ORDER BY type DESC,
+        `URL`;'
+      );
       $urlHandler->execute();
 
       while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1900,31 +2393,41 @@ class MetadataDisplay extends Display\Common {
             case 3:
               $typeInfo = 'CoCo - PrivacyURL';
               break;
-            default :
+            default:
               $typeInfo = '?' . $url['type'];
           }
           if ($oldType > 0) {
             print self::HTML_TABLE_END;
           }
-          printf ('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr>
+          printf('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr>
         <th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', $typeInfo, "\n", "\n", "\n");
           $oldType = $url['type'];
         }
-        printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><tr>%s',
-          urlencode($url['URL']), htmlspecialchars($url['URL']), $url['lastSeen'], $url['lastValidated'], $url['validationOutput'], "\n");
+        printf(
+          '      <tr><td><a href="?action=URLlist&URL=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><tr>%s',
+          urlencode($url['URL']),
+          htmlspecialchars($url['URL']),
+          $url['lastSeen'],
+          $url['lastValidated'],
+          $url['validationOutput'],
+          "\n"
+        );
       }
-      if ($oldType > 0) { print self::HTML_TABLE_END; }
+      if ($oldType > 0) {
+        print self::HTML_TABLE_END;
+      }
 
-      $warnTime = date('Y-m-d H:i', time() - 25200 ); // (7 * 60 * 60 =  7 hours)
-      $warnTimeweek = date('Y-m-d H:i', time() - 608400 ); // (7 * 24 * 60 * 60 + 3600 =  7 days 1 hour)
+      $warnTime = date('Y-m-d H:i', time() - 25200); // (7 * 60 * 60 =  7 hours)
+      $warnTimeweek = date('Y-m-d H:i', time() - 608400); // (7 * 24 * 60 * 60 + 3600 =  7 days 1 hour)
       $urlWaitHandler = $this->config->getDb()->prepare(
         "SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen`, `status`
         FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
           OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0'))
-        ORDER BY `lastValidated`;");
+        ORDER BY `lastValidated`;"
+      );
       $urlWaitHandler->execute();
-      printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">
+      printf('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">
       <tr>
         <th>URL</th>
         <th>Last seen</th>
@@ -1934,13 +2437,19 @@ class MetadataDisplay extends Display\Common {
       while ($url = $urlWaitHandler->fetch(PDO::FETCH_ASSOC)) {
         $warn = (($url['lastValidated'] < $warnTime && $url['status'] > 0) || $url['lastValidated'] < $warnTimeweek)
           ? '! ' : '';
-        printf ('      <tr>
+        printf(
+          '      <tr>
         <td><a href="?action=URLlist&URL=%s">%s%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s',
-          urlencode($url['URL']), $warn, htmlspecialchars($url['URL']), $url['lastSeen'],
-          $url['lastValidated'], $url['validationOutput'], "\n");
+          urlencode($url['URL']),
+          $warn,
+          htmlspecialchars($url['URL']),
+          $url['lastSeen'],
+          $url['lastValidated'],
+          $url['validationOutput'],
+          "\n"
+        );
       }
       print self::HTML_TABLE_END;
-
     }
   }
 
@@ -1951,27 +2460,28 @@ class MetadataDisplay extends Display\Common {
    *
    * @return string
    */
-  private function getEntityStatusType($status) {
+  private function getEntityStatusType($status)
+  {
     switch ($status) {
-      case 1 :
+      case 1:
         $returnStatus = 'Published';
         break;
-      case 2 :
+      case 2:
         $returnStatus = 'Pending';
         break;
-      case 3 :
+      case 3:
         $returnStatus = 'Draft';
         break;
-      case 4 :
+      case 4:
         $returnStatus = 'Deleted';
         break;
-      case 5 :
+      case 5:
         $returnStatus = 'POST Pending';
         break;
-      case 6 :
+      case 6:
         $returnStatus = 'Shadow Pending';
         break;
-      default :
+      default:
         $returnStatus = $status . ' unknown status';
     }
     return $returnStatus;
@@ -1984,69 +2494,71 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showErrorList($download = false) {
+  public function showErrorList($download = false)
+  {
     # Default values
-    $remindersUrgentActive='';
-    $remindersUrgentSelected='false';
-    $remindersUrgentShow='';
+    $remindersUrgentActive = '';
+    $remindersUrgentSelected = 'false';
+    $remindersUrgentShow = '';
     #
-    $remindersActive='';
-    $remindersSelected='false';
-    $remindersShow='';
+    $remindersActive = '';
+    $remindersSelected = 'false';
+    $remindersShow = '';
     #
-    $errorsActive='';
-    $errorsSelected='false';
-    $errorsShow='';
+    $errorsActive = '';
+    $errorsSelected = 'false';
+    $errorsShow = '';
     #
     $idPsActive = '';
     $idPsSelected = 'false';
     $idPsShow = '';
     $idPsId = 0;
     #
-    $ppErrorsActive='';
-    $ppErrorsSelected='false';
-    $ppErrorsShow='';
+    $ppErrorsActive = '';
+    $ppErrorsSelected = 'false';
+    $ppErrorsShow = '';
     #
-    $infoErrorsActive='';
-    $infoErrorsSelected='false';
-    $infoErrorsShow='';
+    $infoErrorsActive = '';
+    $infoErrorsSelected = 'false';
+    $infoErrorsShow = '';
 
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
-        case 'reminders' :
+        case 'reminders':
           $remindersActive = self::HTML_ACTIVE;
           $remindersSelected = self::HTML_TRUE;
           $remindersShow = self::HTML_SHOW;
           break;
-        case 'IdPs' :
+        case 'IdPs':
           $idPsActive = self::HTML_ACTIVE;
           $idPsSelected = self::HTML_TRUE;
           $idPsShow = self::HTML_SHOW;
           $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
           break;
-        case 'PP' :
+        case 'PP':
           $ppErrorsActive = self::HTML_ACTIVE;
           $ppErrorsSelected = self::HTML_TRUE;
           $ppErrorsShow = self::HTML_SHOW;
           break;
-        case 'Info' :
+        case 'Info':
           $infoErrorsActive = self::HTML_ACTIVE;
           $infoErrorsSelected = self::HTML_TRUE;
           $infoErrorsShow = self::HTML_SHOW;
           break;
-        case 'reminders-urgent' :
-        default :
+        case 'reminders-urgent':
+        default:
           $remindersUrgentActive = self::HTML_ACTIVE;
           $remindersUrgentSelected = self::HTML_TRUE;
           $remindersUrgentShow = self::HTML_SHOW;
-        }
+      }
     } else {
       $remindersUrgentActive = self::HTML_ACTIVE;
       $remindersUrgentSelected = self::HTML_TRUE;
       $remindersUrgentShow = self::HTML_SHOW;
     }
     if (! $download) {
-      printf('    <div class="row">
+      printf(
+        '    <div class="row">
       <div class="col">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
           <li class="nav-item">
@@ -2069,42 +2581,77 @@ class MetadataDisplay extends Display\Common {
             <a class="nav-link%s" id="infoErrors-tab" data-toggle="tab" href="#infoErrors" role="tab"
               aria-controls="infoErrors" aria-selected="%s">Information</a>
           </li>%s',
-        $remindersUrgentActive, $remindersUrgentSelected, $remindersActive, $remindersSelected,
-        $errorsActive, $errorsSelected, $ppErrorsActive, $ppErrorsSelected, $infoErrorsActive, $infoErrorsSelected, "\n");
+        $remindersUrgentActive,
+        $remindersUrgentSelected,
+        $remindersActive,
+        $remindersSelected,
+        $errorsActive,
+        $errorsSelected,
+        $ppErrorsActive,
+        $ppErrorsSelected,
+        $infoErrorsActive,
+        $infoErrorsSelected,
+        "\n"
+      );
       if ($this->config->getIMPS()) {
         printf('          <li class="nav-item">
             <a class="nav-link%s" id="idps-tab" data-toggle="tab" href="#idps" role="tab"
               aria-controls="idps" aria-selected="%s">IdP:s missing IMPS</a>
           </li>%s', $idPsActive, $idPsSelected, "\n");
       }
-      printf('        </ul>
+      printf(
+        '        </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
-        "\n", "\n",
-        $remindersUrgentShow, $remindersUrgentActive, "\n");
+        "\n",
+        "\n",
+        $remindersUrgentShow,
+        $remindersUrgentActive,
+        "\n"
+      );
       $this->showErrorMailReminders(false);
-      printf('      </div><!-- End tab-pane reminders-urgent -->
+      printf(
+        '      </div><!-- End tab-pane reminders-urgent -->
       <div class="tab-pane fade%s%s" id="reminders" role="tabpanel" aria-labelledby="reminders-tab">%s',
-        $remindersShow, $remindersActive, "\n");
+        $remindersShow,
+        $remindersActive,
+        "\n"
+      );
       $this->showErrorMailReminders();
-      printf('      </div><!-- End tab-pane reminders -->
+      printf(
+        '      </div><!-- End tab-pane reminders -->
       <div class="tab-pane fade%s%s" id="errors" role="tabpanel" aria-labelledby="errors-tab">%s',
-        $errorsShow, $errorsActive, "\n");
+        $errorsShow,
+        $errorsActive,
+        "\n"
+      );
     }
     $this->showErrorEntitiesList($download);
     if (! $download) {
-      printf('      </div><!-- End tab-pane errors -->
+      printf(
+        '      </div><!-- End tab-pane errors -->
       <div class="tab-pane fade%s%s" id="ppErrors" role="tabpanel" aria-labelledby="ppErrors-tab">%s',
-        $ppErrorsShow, $ppErrorsActive, "\n");
+        $ppErrorsShow,
+        $ppErrorsActive,
+        "\n"
+      );
       $this->showEntityErrorURL('PrivacyStatementURL');
-      printf('      </div><!-- End tab-pane ppErrors -->
+      printf(
+        '      </div><!-- End tab-pane ppErrors -->
       <div class="tab-pane fade%s%s" id="infoErrors" role="tabpanel" aria-labelledby="infoErrors-tab">%s',
-        $infoErrorsShow, $infoErrorsActive, "\n");
+        $infoErrorsShow,
+        $infoErrorsActive,
+        "\n"
+      );
       $this->showEntityErrorURL('InformationURL');
       printf('      </div><!-- End tab-pane infoErrors -->%s', "\n");
       if ($this->config->getIMPS()) {
-        printf('      <div class="tab-pane fade%s%s" id="idps" role="tabpanel" aria-labelledby="idps-tab">%s',
-          $idPsShow, $idPsActive, "\n");
+        printf(
+          '      <div class="tab-pane fade%s%s" id="idps" role="tabpanel" aria-labelledby="idps-tab">%s',
+          $idPsShow,
+          $idPsActive,
+          "\n"
+        );
         $this->showIdPsMissingIMPS($idPsId);
         printf('%s      </div><!-- End tab-pane idps -->%s', "\n", "\n");
       }
@@ -2119,21 +2666,25 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showErrorEntitiesList($download) {
+  private function showErrorEntitiesList($download)
+  {
     $emails = array();
     $entityHandler = $this->config->getDb()->prepare(
       "SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB`
-      FROM `Entities` WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY `entityID`;");
+      FROM `Entities` WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY `entityID`;"
+    );
     $entityHandler->execute();
     $contactPersonHandler = $this->config->getDb()->prepare(
-      'SELECT `contactType`, `emailAddress` FROM `ContactPerson` WHERE `entity_id` = :Id;');
+      'SELECT `contactType`, `emailAddress` FROM `ContactPerson` WHERE `entity_id` = :Id;'
+    );
 
     if ($download) {
       header('Content-Type: text/csv; charset=utf-8');
       header('Content-Disposition: attachment; filename=errorlog.csv');
       print "Type,Feed,Entity,Contact address\n";
     } else {
-      printf('        <br>
+      printf(
+        '        <br>
         <h5>Entities with errors</h5>
         <a href=".?action=ErrorListDownload">
           <button type="button" class="btn btn-primary">Download CSV</button>
@@ -2149,7 +2700,8 @@ class MetadataDisplay extends Display\Common {
               <th>Error</th>
             </tr>
           </thead>%s',
-        "\n");
+        "\n"
+      );
     }
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
@@ -2158,13 +2710,13 @@ class MetadataDisplay extends Display\Common {
       $emails['support'] = '';
       $emails['technical'] = '';
       while ($contact = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
-        $emails[$contact['contactType']] = substr($contact['emailAddress'],7);
+        $emails[$contact['contactType']] = substr($contact['emailAddress'], 7);
       }
-      if ($emails['technical'] != '' ) {
+      if ($emails['technical'] != '') {
         $email = $emails['technical'];
-      } elseif($emails['administrative'] != '') {
+      } elseif ($emails['administrative'] != '') {
         $email = $emails['administrative'];
-      } elseif ($emails['support'] != '' ) {
+      } elseif ($emails['support'] != '') {
         $email = $emails['support'];
       } else {
         $email = 'Missing';
@@ -2175,24 +2727,25 @@ class MetadataDisplay extends Display\Common {
         $type = 'SP';
       }
       switch ($entity['publishIn']) {
-        case 1 :
+        case 1:
           $feed = 'T';
           break;
-        case 2 :
-        case 3 :
+        case 2:
+        case 3:
           $feed = 'S';
           break;
-        case 6 :
-        case 7 :
+        case 6:
+        case 7:
           $feed = 'E';
           break;
-        default :
+        default:
           $feed = '?';
       }
       if ($download) {
-        printf ('%s,%s,%s,%s%s', $type, $feed, $entity['entityID'], $email, "\n");
+        printf('%s,%s,%s,%s%s', $type, $feed, $entity['entityID'], $email, "\n");
       } else {
-        printf ('          <tr>
+        printf(
+          '          <tr>
             <td>%s</td>
             <td>%s</td>
             <td>
@@ -2200,11 +2753,20 @@ class MetadataDisplay extends Display\Common {
             </td>
             <td>%s</td>
             <td>%s</td>%s          </tr>%s',
-          $type, $feed, $entity['id'], htmlspecialchars($entity['entityID']), htmlspecialchars($email),
-          str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
+          $type,
+          $feed,
+          $entity['id'],
+          htmlspecialchars($entity['entityID']),
+          htmlspecialchars($email),
+          str_ireplace("\n", "<br>", $entity['errors'] . $entity['errorsNB']),
+          "\n",
+          "\n"
+        );
       }
     }
-    if (!$download) {print "    " . self::HTML_TABLE_END; }
+    if (!$download) {
+      print "    " . self::HTML_TABLE_END;
+    }
   }
 
   /**
@@ -2214,42 +2776,60 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showEntityErrorURL($urlType) {
-    $entityHandler = $this->config->getDb()->prepare('SELECT id, `isIdP`, `isSP`, `entityID`, `publishIn` FROM Entities WHERE status = 1 ORDER BY `entityID`;');
+  private function showEntityErrorURL($urlType)
+  {
+    $entityHandler = $this->config->getDb()->prepare(
+      'SELECT id, `isIdP`, `isSP`, `entityID`, `publishIn`
+      FROM Entities
+      WHERE status = 1 ORDER BY `entityID`;'
+    );
     $urlHandler = $this->config->getDb()->prepare(
       'SELECT DISTINCT `URLs`.`URL`, URLs.`type`, `URLs`.`status`, `URLs`.`cocov1Status`, `URLs`.`validationOutput`
       FROM `Mdui`, `URLs`
       WHERE `Mdui`.`data` = `URLs`.`URL` AND
         `Mdui`.`element` = :Type AND
-        `Mdui`.`entity_id` = :Id;');
+        `Mdui`.`entity_id` = :Id;'
+    );
     $entityHandler->execute();
-    printf ('        <br>
+    printf(
+      '        <br>
         <h5>Entities with problem in %s</h5>
         <table id="%s-table" class="table table-striped table-bordered">
           <thead><tr><th>EntityID</th><th>Type</th><th>Feed</th><th></th></tr></thead>%s',
-      $urlType, $urlType, "\n");
+      $urlType,
+      $urlType,
+      "\n"
+    );
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $urlHandler->execute(array('Id' => $entity['id'], 'Type' => $urlType));
       $urlInfo = '';
-      while($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+      while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] != 0) {
-          $urlInfo .= htmlspecialchars($url['URL']) . ' : ' . $url['validationOutput'] .'<br>';
+          $urlInfo .= htmlspecialchars($url['URL']) . ' : ' . $url['validationOutput'] . '<br>';
         }
       }
       if ($urlInfo != '') {
         if ($entity['isIdP']) {
           if ($entity['isSP']) {
-            $type='IdP/SP';
+            $type = 'IdP/SP';
           } else {
-            $type='IdP';
+            $type = 'IdP';
           }
         } elseif ($entity['isSP']) {
-          $type='SP';
+          $type = 'SP';
         } else {
-          $type='?';
+          $type = '?';
         }
-        printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
-          $entity['id'], htmlspecialchars($entity['entityID']), $type, ($entity['publishIn'] & 4) == 4 ? 'eduGAIN' : '', $urlInfo, "\n");
+        printf(
+          '          <tr><td><a href=./?showEntity=%d' .
+          ' target="_blank">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
+          $entity['id'],
+          htmlspecialchars($entity['entityID']),
+          $type,
+          ($entity['publishIn'] & 4) == 4 ? 'eduGAIN' : '',
+          $urlInfo,
+          "\n"
+        );
       }
     }
     print self::HTML_TABLE_END;
@@ -2262,8 +2842,9 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showErrorMailReminders($showAll=true) {
-    if( ! $impsDates = $this->config->getIMPS()) {
+  private function showErrorMailReminders($showAll = true)
+  {
+    if (! $impsDates = $this->config->getIMPS()) {
       $impsDates = array('warn1' => '10', 'warn2' => '11', 'error' => '12');
     }
     $entityHandler = $this->config->getDb()->prepare(
@@ -2271,37 +2852,49 @@ class MetadataDisplay extends Display\Common {
       FROM `MailReminders`, `Entities`
       LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
       WHERE `Entities`.`id` = `MailReminders`.`entity_id`
-      ORDER BY `entityID`, `type`;');
+      ORDER BY `entityID`, `type`;'
+    );
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `lastValidated`
       FROM `IMPS`, `IdpIMPS`
       WHERE `id` = `IMPS_id`
-        AND `entity_id` = :Id;');
+        AND `entity_id` = :Id;'
+    );
     $entityHandler->execute();
-    printf ('        <br>
+    printf(
+      '        <br>
         <h5>%s</h5>
         <p>Updated every Wednesday at 7:15 UTC</p>
         <table id="reminder-table%s" class="table table-striped table-bordered">
-          <thead><tr><th>EntityID</th><th>Reason</th><th>Mail sent</th><th>Last Confirmed/Validated</th></tr></thead>%s',
+          <thead>
+            <tr>
+              <th>EntityID</th>
+              <th>Reason</th>
+              <th>Mail sent</th>
+              <th>Last Confirmed/Validated</th>
+            </tr>
+          </thead>%s',
       $showAll ? 'Entities that we sent notifications to' : 'Entities that are about to expire / be removed',
-      $showAll ? '' : '-actOn', "\n");
+      $showAll ? '' : '-actOn',
+      "\n"
+    );
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $showUrgent = false;
       switch ($entity['type']) {
-        case 1 :
+        case 1:
           // Confirmation/Validation reminder
           switch ($entity['level']) {
-            case 1 :
+            case 1:
               $reason = 'Metadata has not been validated/confirmed for 10 months';
               break;
-            case 2 :
+            case 2:
               $reason = 'Metadata has not been validated/confirmed for 11 months';
               break;
             case 3:
               $reason = 'Metadata has not been validated/confirmed for 12 months';
               $showUrgent = true;
               break;
-            default :
+            default:
               $showUrgent = true;
               $reason = 'Not validated/confirmed';
           }
@@ -2310,72 +2903,72 @@ class MetadataDisplay extends Display\Common {
         case 2:
           // Cert expire
           switch ($entity['level']) {
-            case 1 :
+            case 1:
               $reason = 'Certificate will expire within a month';
               break;
-            case 2 :
+            case 2:
               $showUrgent = true;
               $reason = 'Certificate has expired';
               break;
-            default :
+            default:
               $showUrgent = true;
               $reason = 'Certificate error';
           }
           $date = $entity['lastConfirmed'];
           break;
-        case 3 :
+        case 3:
           // Peending queue
           switch ($entity['level']) {
-            case 1 :
+            case 1:
               $reason = '1 week in pending queue';
               break;
-            case 2 :
+            case 2:
               $reason = '4 weeks in pending queue';
               break;
             case 3:
               $reason = '11 weeks in pending queue';
               break;
-            default :
+            default:
               $reason = 'To long in pending queue';
           }
           $date = $entity['lastValidated'];
           break;
-        case 4 :
+        case 4:
           // Drafts queue
           switch ($entity['level']) {
-            case 1 :
+            case 1:
               $reason = '2 weeks in drafts queue';
               break;
-            case 2 :
+            case 2:
               $reason = '7 weeks in drafts queue';
               break;
-            default :
+            default:
               $reason = 'To long in drafts queue';
           }
           $date = $entity['lastValidated'];
           break;
-        case 5 :
+        case 5:
           // Old IMPS:es
           switch ($entity['level']) {
-            case 1 :
-              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['warn1']);
+            case 1:
+              $reason = sprintf(self::TEXT_IHNBVF, $impsDates['warn1']);
               break;
-            case 2 :
-              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['warn2']);
+            case 2:
+              $reason = sprintf(self::TEXT_IHNBVF, $impsDates['warn2']);
               break;
-            case 3 :
-              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['error']);
+            case 3:
+              $reason = sprintf(self::TEXT_IHNBVF, $impsDates['error']);
               $showUrgent = true;
               break;
-            case 4 :
-            default :
+            case 4:
+            default:
               $reason = 'IMPS needs to be updated';
               $showUrgent = true;
           }
           $impsHandler->execute(array(self::BIND_ID => $entity['entity_id']));
           $date = $impsHandler->fetchColumn();
           break;
-        default :
+        default:
           $date = '????';
           $reason = sprintf('Missing config for type = %d', $entity['type']);
       }
@@ -2387,10 +2980,16 @@ class MetadataDisplay extends Display\Common {
             <td>%s</td>
             <td>%s</td>
           </tr>%s',
-          $entity['entity_id'], htmlspecialchars($entity['entityID']), $reason, $entity['mailDate'], $date,"\n");
+          $entity['entity_id'],
+          htmlspecialchars($entity['entityID']),
+          $reason,
+          $entity['mailDate'],
+          $date,
+          "\n"
+        );
       }
     }
-    printf ('    %s', self::HTML_TABLE_END);
+    printf('    %s', self::HTML_TABLE_END);
   }
 
   /**
@@ -2398,33 +2997,45 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showIdPsMissingIMPS() {
+  private function showIdPsMissingIMPS()
+  {
     $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`, `publishIn`
       FROM `Entities`
       WHERE `status` = 1 AND `isIdP` = 1 AND id NOT IN (SELECT `entity_id` FROM `IdpIMPS`)
-      ORDER BY `publishIn` DESC, `entityID`;');
+      ORDER BY `publishIn` DESC, `entityID`;'
+    );
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`,`name`, `maximumAL`
         FROM `IMPS`
         WHERE `id` NOT IN (SELECT `IMPS_id` FROM `IdpIMPS`)
-        ORDER BY `name`;');
+        ORDER BY `name`;'
+    );
     $idpHandler->execute();
     printf('        <div class="row">
           <div class="col">
             <h4>IdP:s missing an IMPS</h4>
-            <ul>%s' ,"\n");
+            <ul>%s', "\n");
     while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
-      $testing = $idp['publishIn'] == 1 ? ' (Testing)' : '';
-      printf('              <li><a href="?showEntity=%s" target="_blank">%s</a>%s</li>%s', $idp['id'], htmlspecialchars($idp['entityID']), $testing, "\n");
+      printf(
+        '              <li><a href="?showEntity=%s" target="_blank">%s</a></li>%s',
+        $idp['id'],
+        htmlspecialchars($idp['entityID']),
+        "\n"
+      );
     }
     $impsHandler->execute();
     printf('            </ul>
             <h4>IMPS:s missing an IdP</h4>
-            <ul>%s' ,"\n");
+            <ul>%s', "\n");
     while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-      printf('              <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></li>%s', $imps['id'], $imps['id'], htmlspecialchars($imps['name']), "\n");
-
+      printf(
+        '              <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></li>%s',
+        $imps['id'],
+        $imps['id'],
+        htmlspecialchars($imps['name']),
+        "\n"
+      );
     }
     printf('            </ul>
           </div><!-- end col -->
@@ -2440,8 +3051,11 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showXMLDiff($entityId1, $entityId2) {
-    $entityHandler = $this->config->getDb()->prepare('SELECT `id`, `entityID`, `xml` FROM `Entities` WHERE `id` = :Id;');
+  public function showXMLDiff($entityId1, $entityId2)
+  {
+    $entityHandler = $this->config->getDb()->prepare(
+      'SELECT `id`, `entityID`, `xml` FROM `Entities` WHERE `id` = :Id;'
+    );
     $entityHandler->bindValue(self::BIND_ID, $entityId1);
     $entityHandler->execute();
     if ($entity1 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -2453,7 +3067,7 @@ class MetadataDisplay extends Display\Common {
         $normalize2 = new \metadata\NormalizeXML();
         $normalize2->fromString($entity2['xml']);
         if ($normalize1->getStatus() && $normalize2->getStatus()) {
-          printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
+          printf('<h4>Diff of %s</h4>', $entity1['entityID']);
           // renderer class name:
           //     Text renderers: Context, JsonText, Unified
           //     HTML renderers: Combined, Inline, JsonHtml, SideBySide
@@ -2523,7 +3137,11 @@ class MetadataDisplay extends Display\Common {
               'wrapperClasses' => ['diff-wrapper'],
           ];
 
-          $differ = new Differ(explode("\n", $normalize2->getXML()), explode("\n", $normalize1->getXML()), $differOptions);
+          $differ = new Differ(
+            explode("\n", $normalize2->getXML()),
+            explode("\n", $normalize1->getXML()),
+            $differOptions
+          );
           $renderer = RendererFactory::make($rendererName, $rendererOptions); // or your own renderer object
           printf('<pre>%s</pre>', htmlspecialchars($renderer->render($differ)));
         } else {
@@ -2538,21 +3156,24 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showPendingList() {
+  public function showPendingList()
+  {
     $entitiesHandler = $this->config->getDb()->prepare(
       'SELECT `Entities`.`id`, `entityID`, `xml`, `lastUpdated`, `email`, `lastChanged`
       FROM `Entities`, `EntityUser`, `Users`
       WHERE `status` = 2 AND `Entities`.`id` = `entity_id` AND `user_id` = `Users`.`id`
-      ORDER BY `lastUpdated` ASC, `entityID`, `lastChanged` DESC;');
+      ORDER BY `lastUpdated` ASC, `entityID`, `lastChanged` DESC;'
+    );
     $entityHandler = $this->config->getDb()->prepare(
-      'SELECT `id`, `xml`, `lastUpdated` FROM `Entities` WHERE `status` = 1 AND `entityID` = :EntityID;');
+      'SELECT `id`, `xml`, `lastUpdated` FROM `Entities` WHERE `status` = 1 AND `entityID` = :EntityID;'
+    );
     $entityHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $entitiesHandler->execute();
 
     $normalize = new \metadata\NormalizeXML();
 
-    printf ('    <table class="table table-striped table-bordered">
-      <tr><th>Entity</th><th>Updater</th><th>Time</th><th>TimeOK</th><th>XML</th></tr>%s', "\n", );
+    printf('    <table class="table table-striped table-bordered">
+      <tr><th>Entity</th><th>Updater</th><th>Time</th><th>TimeOK</th><th>XML</th></tr>%s', "\n");
     $lastId = 0;
     while ($pendingEntity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($lastId == $pendingEntity['id']) {
@@ -2568,22 +3189,47 @@ class MetadataDisplay extends Display\Common {
           $pendingXML = $normalize->getXML();
           $entityHandler->execute();
           if ($publishedEntity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-            $okRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>',
-              htmlspecialchars($entityID), $pendingEntity['id'], $publishedEntity['id']);
-            printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
-              $okRemove, htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'],
+            $okRemove = sprintf(
+              '%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>',
+              htmlspecialchars($entityID),
+              $pendingEntity['id'],
+              $publishedEntity['id']
+            );
+            printf(
+              '      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
+              $okRemove,
+              htmlspecialchars($pendingEntity['email']),
+              $pendingEntity['lastUpdated'],
               ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '',
-              ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
+              ($pendingXML == $publishedEntity['xml']) ? 'X' : '',
+              "\n"
+            );
           } else {
-            printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">Not published</td></tr>%s',
-              htmlspecialchars($entityID), htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'], "\n" );
+            printf(
+              '      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">Not published</td></tr>%s',
+              htmlspecialchars($entityID),
+              htmlspecialchars($pendingEntity['email']),
+              $pendingEntity['lastUpdated'],
+              "\n"
+            );
           }
         } else {
-          printf('      <tr><td>%s</td><td colspan="4">%s</td></tr>%s',  htmlspecialchars($entityID), 'Diff in entityID', "\n");
+          printf(
+            '      <tr><td>%s</td><td colspan="4">%s</td></tr>%s',
+            htmlspecialchars($entityID),
+            'Diff in entityID',
+            "\n"
+          );
         }
       } else {
-        printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">%s</td></tr>%s',
-          htmlspecialchars($entityID), htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'], 'Problem with XML', "\n");
+        printf(
+          '      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">%s</td></tr>%s',
+          htmlspecialchars($entityID),
+          htmlspecialchars($pendingEntity['email']),
+          $pendingEntity['lastUpdated'],
+          'Problem with XML',
+          "\n"
+        );
       }
     }
     print self::HTML_TABLE_END;
@@ -2594,7 +3240,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showOrganizationLists() {
+  public function showOrganizationLists()
+  {
     $organizationHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(id) AS count, `Org1`.`data` AS `OrganizationName`,
         `Org2`.`data` AS `OrganizationDisplayName`, `Org3`.`data` AS `OrganizationURL`
@@ -2607,15 +3254,16 @@ class MetadataDisplay extends Display\Common {
       LEFT JOIN `Organization` Org3
         ON `Entities`.`id` = `Org3`.`entity_id` AND `Org3`.`element` = 'OrganizationURL' AND `Org3`.`lang` = :Lang
       WHERE `Entities`.`status` = 1 AND `Entities`.`publishIn` > 1
-      GROUP BY `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`;");
+      GROUP BY `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`;"
+    );
     if (isset($_GET['lang'])) {
       switch ($_GET['lang']) {
-        case 'sv' :
+        case 'sv':
           $showSv = true;
           $showEn = false;
           break;
-        case 'en' :
-        default :
+        case 'en':
+        default:
           $showSv = false;
           $showEn = true;
       }
@@ -2631,12 +3279,14 @@ class MetadataDisplay extends Display\Common {
             AND `Org2`.`lang` = :Lang AND `Org2`.`data` = :OrganizationDisplayName
             AND `Entities`.`id` = `Org3`.`entity_id` AND `Org3`.`element` = 'OrganizationURL'
             AND `Org3`.`lang` = :Lang AND `Org3`.`data` = :OrganizationURL
-          ORDER BY `entityID`;");
+          ORDER BY `entityID`;"
+        );
         $entitiesHandler->execute(array('OrganizationName' => $_GET['name'],
           'OrganizationDisplayName' => $_GET['display'],
           'OrganizationURL' => $_GET['url'],
           'Lang' => $_GET['lang']));
-        printf ('    <h4>Entities</h4>
+        printf(
+          '    <h4>Entities</h4>
     <table id="Entities-table" class="table table-striped table-bordered">
       <thead><tr>
         <th>entityID</th>
@@ -2644,19 +3294,25 @@ class MetadataDisplay extends Display\Common {
         <th>OrganizationDisplayName</th>
         <th>OrganizationURL</th>
       </tr></thead>%s',
-        "\n");
+          "\n"
+        );
         while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-          printf ('      <tr>
+          printf(
+            '      <tr>
         <td><a href="?showEntity=%d">%s</a></td>
         <td>%s</td>
         <td>%s</td>
         <td>%s</td>
       </tr>%s',
-            $entity['id'], htmlspecialchars($entity['entityID']),
-            htmlspecialchars($entity['OrganizationName']), htmlspecialchars($entity['OrganizationDisplayName']),
-            htmlspecialchars($entity['OrganizationURL']), "\n");
+            $entity['id'],
+            htmlspecialchars($entity['entityID']),
+            htmlspecialchars($entity['OrganizationName']),
+            htmlspecialchars($entity['OrganizationDisplayName']),
+            htmlspecialchars($entity['OrganizationURL']),
+            "\n"
+          );
         }
-        printf ('%s', self::HTML_TABLE_END);
+        printf('%s', self::HTML_TABLE_END);
       }
     } else {
       $showSv = false;
@@ -2673,17 +3329,16 @@ class MetadataDisplay extends Display\Common {
     }
 
     if (in_array('en', $languages)) {
-        $organizationHandler->execute(array('Lang' => 'en'));
-        // shortcut for English-only: no heading
-        if (count($languages)==1) {
-            $this->printOrgList($organizationHandler, 'en');
-        } else {
-            $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
-            $this->printOrgList($organizationHandler, 'en');
-            $this->showCollapseEnd('Organizations-en');
-        }
+      $organizationHandler->execute(array('Lang' => 'en'));
+      // shortcut for English-only: no heading
+      if (count($languages) == 1) {
+          $this->printOrgList($organizationHandler, 'en');
+      } else {
+          $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
+          $this->printOrgList($organizationHandler, 'en');
+          $this->showCollapseEnd('Organizations-en');
+      }
     }
-
   }
 
   /**
@@ -2695,8 +3350,10 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function printOrgList($organizationHandler, $lang){
-    printf ('
+  private function printOrgList($organizationHandler, $lang)
+  {
+    printf(
+      '
           <table id="Organization%s-table" class="table table-striped table-bordered">
             <thead>
               <tr>
@@ -2706,24 +3363,35 @@ class MetadataDisplay extends Display\Common {
                 <th>Count</th>
               </tr>
             </thead>%s',
-      $lang, "\n");
+      $lang,
+      "\n"
+    );
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($organization['OrganizationName'] != '' && $organization['OrganizationDisplayName'] != '' &&
-        $organization['OrganizationURL'] != '') {
-        printf ('            <tr>
+      if (
+        $organization['OrganizationName'] != '' &&
+        $organization['OrganizationDisplayName'] != '' &&
+        $organization['OrganizationURL'] != ''
+      ) {
+        printf(
+          '            <tr>
               <td>%s</td>
               <td>%s</td>
               <td>%s</td>
               <td><a href="?action=OrganizationsInfo&name=%s&display=%s&url=%s&lang=%s">%d</a></td>
             </tr>%s',
-          htmlspecialchars($organization['OrganizationName']), htmlspecialchars($organization['OrganizationDisplayName']),
+          htmlspecialchars($organization['OrganizationName']),
+          htmlspecialchars($organization['OrganizationDisplayName']),
           htmlspecialchars($organization['OrganizationURL']),
-          urlencode($organization['OrganizationName']), urlencode($organization['OrganizationDisplayName']),
-          urlencode($organization['OrganizationURL']), $lang,
-          $organization['count'], "\n");
+          urlencode($organization['OrganizationName']),
+          urlencode($organization['OrganizationDisplayName']),
+          urlencode($organization['OrganizationURL']),
+          $lang,
+          $organization['count'],
+          "\n"
+        );
       }
     }
-    printf ('      %s', self::HTML_TABLE_END);
+    printf('      %s', self::HTML_TABLE_END);
   }
 
   /**
@@ -2733,7 +3401,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showMembers($userLevel) {
+  public function showMembers($userLevel)
+  {
     # Default values
     $impsActive = '';
     $impsSelected = 'false';
@@ -2745,24 +3414,24 @@ class MetadataDisplay extends Display\Common {
     $organizationsShow = '';
     $orgId = 0;
     #
-    $scopesActive='';
-    $scopesSelected='false';
-    $scopesShow='';
+    $scopesActive = '';
+    $scopesSelected = 'false';
+    $scopesShow = '';
 
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
-        case 'imps' :
+        case 'imps':
           $impsActive = self::HTML_ACTIVE;
           $impsSelected = self::HTML_TRUE;
           $impsShow = self::HTML_SHOW;
           $impsId = isset($_GET['id']) ? $_GET['id'] : 0;
           break;
-        case 'scopes' :
+        case 'scopes':
           $scopesActive = self::HTML_ACTIVE;
           $scopesSelected = self::HTML_TRUE;
           $scopesShow = self::HTML_SHOW;
           break;
-        default :
+        default:
           $organizationsActive = self::HTML_ACTIVE;
           $organizationsSelected = self::HTML_TRUE;
           $organizationsShow = self::HTML_SHOW;
@@ -2788,7 +3457,8 @@ class MetadataDisplay extends Display\Common {
               aria-controls="IMPS" aria-selected="%s">IMPS</a>
           </li>%s', $impsActive, $impsSelected, "\n");
     }
-    printf('          <li class="nav-item">
+    printf(
+      '          <li class="nav-item">
             <a class="nav-link%s" id="organizations-tab" data-toggle="tab" href="#organizations" role="tab"
               aria-controls="organizations" aria-selected="%s">Organizations</a>
           </li>
@@ -2798,22 +3468,39 @@ class MetadataDisplay extends Display\Common {
           </li>
         </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">%s',
-      $organizationsActive, $organizationsSelected, $scopesActive, $scopesSelected, "\n", "\n", "\n");
+      $organizationsActive,
+      $organizationsSelected,
+      $scopesActive,
+      $scopesSelected,
+      "\n",
+      "\n",
+      "\n"
+    );
     if ($this->config->getIMPS()) {
-      printf('      <div class="tab-pane fade%s%s" id="IMPS" role="tabpanel" aria-labelledby="IMPS-tab">',
-        $impsShow, $impsActive);
+      printf(
+        '      <div class="tab-pane fade%s%s" id="IMPS" role="tabpanel" aria-labelledby="IMPS-tab">',
+        $impsShow,
+        $impsActive
+      );
       $this->showIMPSList($impsId, $userLevel);
       printf('%s      </div><!-- End tab-pane IMPS -->%s', "\n", "\n");
     }
-    printf('      <div class="tab-pane fade%s%s" id="organizations" role="tabpanel" aria-labelledby="organizations-tab">',
-        $organizationsShow, $organizationsActive);
+    printf(
+      '      <div class="tab-pane fade%s%s" id="organizations" role="tabpanel" aria-labelledby="organizations-tab">',
+      $organizationsShow,
+      $organizationsActive
+    );
     $this->showOrganizationInfoLists($orgId, $userLevel);
-    printf('%s      </div><!-- End tab-pane organizations -->
+    printf(
+      '%s      </div><!-- End tab-pane organizations -->
       <div class="tab-pane fade%s%s" id="scopes" role="tabpanel" aria-labelledby="scopes-tab">',
-        "\n", $scopesShow, $scopesActive);
+      "\n",
+      $scopesShow,
+      $scopesActive
+    );
     $this->showScopeList();
     printf('%s      </div><!-- End tab-pane scopes -->
-    </div><!-- End tab-content -->%s',"\n", "\n");
+    </div><!-- End tab-content -->%s', "\n", "\n");
   }
 
   /**
@@ -2821,7 +3508,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showIMPSList($id, $userLevel) {
+  private function showIMPSList($id, $userLevel)
+  {
     $impsHandler = $this->config->getDb()->prepare(
       "SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
         `IMPS`.`OrganizationInfo_id` AS orgId, `OrganizationDisplayName`,
@@ -2832,13 +3520,18 @@ class MetadataDisplay extends Display\Common {
         `IMPS`.`OrganizationInfo_id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
         `OrganizationInfo`.`notMemberAfter` is NULL AND
         `lang` = 'en'
-      ORDER BY `name`;");
+      ORDER BY `name`;"
+    );
     $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`
       FROM `Entities`, `IdpIMPS`
-      WHERE `id` = `entity_id` AND `IMPS_id` = :Id;');
-    $flagDates = $this->config->getDb()->query('SELECT NOW() - INTERVAL ' . $this->config->getIMPS()['warn1'] . ' MONTH AS `warn1Date`,
-      NOW() - INTERVAL ' . $this->config->getIMPS()['error'] . ' MONTH AS `errorDate`', PDO::FETCH_ASSOC);
+      WHERE `id` = `entity_id` AND `IMPS_id` = :Id;'
+    );
+    $flagDates = $this->config->getDb()->query(
+      'SELECT NOW() - INTERVAL ' . $this->config->getIMPS()['warn1'] . ' MONTH AS `warn1Date`,
+      NOW() - INTERVAL ' . $this->config->getIMPS()['error'] . ' MONTH AS `errorDate`',
+      PDO::FETCH_ASSOC
+    );
 
     foreach ($flagDates as $dates) {
       # Need to use foreach to fetch row. $flagDates is a PDOStatement
@@ -2847,26 +3540,38 @@ class MetadataDisplay extends Display\Common {
     }
     $flagDates->closeCursor();
     if ($userLevel > 10) {
-      printf('%s          <a href=".?action=Members&subAction=editImps&id=0"><button type="button" class="btn btn-outline-primary">Add new IMPS</button></a>',
-        "\n");
+      printf(
+        '%s          <a href=".?action=Members&subAction=editImps&id=0">' .
+        '<button type="button" class="btn btn-outline-primary">Add new IMPS</button></a>',
+        "\n"
+      );
     }
     $impsHandler->execute();
     while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($warn1Date > $imps['lastValidated']) {
-        $validationStatus = $errorDate > $imps['lastValidated'] ? ' <i class="fas fa-exclamation"></i>' : ' <i class="fas fa-exclamation-triangle"></i>';
+        $validationStatus = $errorDate > $imps['lastValidated']
+          ? ' <i class="fas fa-exclamation"></i>' : ' <i class="fas fa-exclamation-triangle"></i>';
       } else {
         $validationStatus = '';
       }
       $idpHandler->execute(array(self::BIND_ID => $imps['id']));
-      $lastValidated = substr($imps['lastValidated'], 0 ,10);
-      $name = htmlspecialchars($imps['name']) . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
+      $lastValidated = substr($imps['lastValidated'], 0, 10);
+      $name = htmlspecialchars($imps['name']) . " (AL" . $imps['maximumAL'] . ") - " .
+        $lastValidated . $validationStatus;
       $this->showCollapse($name, "imps-" . $imps['id'], false, 3, $id == $imps['id'], false, 0, 0);
       if ($userLevel > 10) {
-        printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
-                <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
+        printf(
+          '%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
+                <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>',
+          "\n",
+          $imps['id'],
+          $imps['id']
+        );
       }
-      $validatedBy = $imps['lastUpdated'] == $lastValidated ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
-      printf('%s                <ul>
+      $validatedBy = $imps['lastUpdated'] == $lastValidated
+        ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
+      printf(
+        '%s                <ul>
                   <li>Organization  : <a href="?action=Members&tab=organizations&id=%d#org-%d">%s</a></li>
                   <li>Allowed maximum AL : %d</li>
                   <li>Accepted by Board of Trustees : %s</li>
@@ -2875,10 +3580,23 @@ class MetadataDisplay extends Display\Common {
                 </ul>
                 <h5>Connected IdP:s</h5>
                 <ul>%s',
-        "\n", $imps['orgId'], $imps['orgId'], htmlspecialchars($imps['OrganizationDisplayName']), $imps['maximumAL'],
-        $imps['lastUpdated'], $lastValidated, $validatedBy, "\n");
+        "\n",
+        $imps['orgId'],
+        $imps['orgId'],
+        htmlspecialchars($imps['OrganizationDisplayName']),
+        $imps['maximumAL'],
+        $imps['lastUpdated'],
+        $lastValidated,
+        $validatedBy,
+        "\n"
+      );
       while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
+        printf(
+          '                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s',
+          $idp['id'],
+          $idp['entityID'],
+          "\n"
+        );
       }
       print '                </ul>';
       $this->showCollapseEnd("imps-" . $imps['id'], 3);
@@ -2895,7 +3613,8 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showOrganizationInfoLists($id, $userLevel) {
+  private function showOrganizationInfoLists($id, $userLevel)
+  {
     $organizationHandler = $this->config->getDb()->prepare(
       "SELECT `OrganizationInfo`.`id` AS orgId,
           `OrganizationDisplayName`, `memberSince`, `notMemberAfter`,
@@ -2906,38 +3625,55 @@ class MetadataDisplay extends Display\Common {
         WHERE `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
           `lang` = 'en'
         GROUP BY(orgId)
-        ORDER BY `OrganizationDisplayName`;");
+        ORDER BY `OrganizationDisplayName`;"
+    );
     $organizationDataHandler = $this->config->getDb()->prepare(
       'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
         FROM `OrganizationInfoData`
         WHERE `OrganizationInfo_id` = :Id
-        ORDER BY `lang`;');
+        ORDER BY `lang`;'
+    );
 
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `id`,`name`, `maximumAL`, `lastValidated`
         FROM `IMPS`
         WHERE `OrganizationInfo_id` = :Id
-        ORDER BY `name`;');
+        ORDER BY `name`;'
+    );
     $entitiesHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
       FROM `Entities`
       WHERE `status` = 1
-        AND `OrganizationInfo_id` = :Id;');
+        AND `OrganizationInfo_id` = :Id;'
+    );
 
     $showAllOrgs = isset($_GET['showAllOrgs']);
     if ($this->config->getIMPS()) {
-      printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
-      $id, $showAllOrgs ? '' : self::HTML_SHOWALLORGS, $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
+      printf(
+        '%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d">' .
+        '<button type="button" class="btn btn-outline-primary">%s</button></a>',
+        "\n",
+        $id,
+        $showAllOrgs ? '' : self::HTML_SHOWALLORGS,
+        $id,
+        $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations'
+      );
     } else {
       $showAllOrgs = true;
     }
     if ($userLevel > 10) {
-      printf('%s          <a href=".?action=Members&subAction=editOrganization&id=0%s"><button type="button" class="btn btn-outline-primary">Add new Organization</button></a>',
-        "\n", $showAllOrgs ? self::HTML_SHOWALLORGS : '');
+      printf(
+        '%s          <a href=".?action=Members&subAction=editOrganization&id=0%s">' .
+        '<button type="button" class="btn btn-outline-primary">Add new Organization</button></a>',
+        "\n",
+        $showAllOrgs ? self::HTML_SHOWALLORGS : ''
+      );
     }
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($organization['impsCount'] == 0 && !$showAllOrgs ) { continue; }
+      if ($organization['impsCount'] == 0 && !$showAllOrgs) {
+        continue;
+      }
       $impsHandler->execute(array(self::BIND_ID => $organization['orgId']));
       $entitiesHandler->execute(array(self::BIND_ID => $organization['orgId']));
       $organizationDataHandler->execute(array(self::BIND_ID => $organization['orgId']));
@@ -2948,27 +3684,38 @@ class MetadataDisplay extends Display\Common {
         $name .= '(' . $organization['entitiesCount'] . ')';
       }
       if ($organization['notMemberAfter']) {
-        $name .= '- Not member ' . ( date("Y-m-d") > $organization['notMemberAfter'] ? 'any more' : 'after ' . $organization['notMemberAfter']);
+        $name .= '- Not member ' . ( date("Y-m-d") > $organization['notMemberAfter'] ? 'any more' : 'after ' .
+          $organization['notMemberAfter']);
       }
       $this->showCollapse($name, "org-" . $organization['orgId'], false, 3, $id == $organization['orgId']);
       if ($userLevel > 10) {
-        printf('%s                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
+        printf(
+          '
+                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeOrganization&id=%d%s"><i class="fas fa-trash"></i></a>',
-                "\n", $organization['orgId'], $showAllOrgs ? self::HTML_SHOWALLORGS : '',
-                $organization['orgId'], $showAllOrgs ? self::HTML_SHOWALLORGS : '');
+          $organization['orgId'],
+          $showAllOrgs ? self::HTML_SHOWALLORGS : '',
+          $organization['orgId'],
+          $showAllOrgs ? self::HTML_SHOWALLORGS : ''
+        );
       }
       printf('%s                <ul>%s', "\n", "\n");
       while ($orgInfoData = $organizationDataHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf('                  <li>%s
+        printf(
+          '                  <li>%s
                     <ul>
                       <li>Name : %s</li>
                       <li>DisplayName : %s</li>
                       <li>URL : %s</li>
                     </ul>
                   </li>%s',
-          isset(self::LANG_CODES[$orgInfoData['lang']]) ? self::LANG_CODES[$orgInfoData['lang']] : sprintf('Unkown lang code: %s', $orgInfoData['lang']),
-          htmlspecialchars($orgInfoData['OrganizationName']), htmlspecialchars($orgInfoData['OrganizationDisplayName']), htmlspecialchars($orgInfoData['OrganizationURL']), "\n");
-
+          isset(self::LANG_CODES[$orgInfoData['lang']])
+            ? self::LANG_CODES[$orgInfoData['lang']] : sprintf('Unkown lang code: %s', $orgInfoData['lang']),
+          htmlspecialchars($orgInfoData['OrganizationName']),
+          htmlspecialchars($orgInfoData['OrganizationDisplayName']),
+          htmlspecialchars($orgInfoData['OrganizationURL']),
+          "\n"
+        );
       }
       printf('                  <li>memberSince : %s</li>%s', $organization['memberSince'], "\n");
       if ($organization['notMemberAfter']) {
@@ -2979,18 +3726,29 @@ class MetadataDisplay extends Display\Common {
         printf('IMPS:s
                     <ul>%s', "\n");
         while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-          printf ('                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
-          $imps['id'], $imps['id'], htmlspecialchars($imps['name']), $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
+          printf(
+            '                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
+            $imps['id'],
+            $imps['id'],
+            htmlspecialchars($imps['name']),
+            $imps['maximumAL'],
+            substr($imps['lastValidated'], 0, 10),
+            "\n"
+          );
         }
-        printf ('                    </ul>
+        printf('                    </ul>
                   </li>
                   <li>');
       }
       printf('Entities
                     <ul>%s', "\n");
       while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('                      <li><a href="?showEntity=%d">%s</a></li>%s',
-          $entity['id'], $entity['entityID'], "\n");
+        printf(
+          '                      <li><a href="?showEntity=%d">%s</a></li>%s',
+          $entity['id'],
+          $entity['entityID'],
+          "\n"
+        );
       }
       print '                    </ul>
                   </li>
@@ -3004,8 +3762,9 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  private function showScopeList() {
-    printf ('%s        <table id="scope-table" class="table table-striped table-bordered">
+  private function showScopeList()
+  {
+    printf('%s        <table id="scope-table" class="table table-striped table-bordered">
           <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n", "\n");
     $scopeHandler = $this->config->getDb()->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
                         FROM `Scopes` ,`Entities`, `Organization`
@@ -3017,14 +3776,20 @@ class MetadataDisplay extends Display\Common {
                           `element`= 'OrganizationName';");
     $scopeHandler->execute();
     while ($scope = $scopeHandler->fetch(PDO::FETCH_ASSOC)) {
-      printf ('          <tr>
+      printf(
+        '          <tr>
             <td>%s</td>
             <td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td>
             <td>%s</td>
           </tr>%s',
-        htmlspecialchars($scope['scope']), $scope['id'], htmlspecialchars($scope['entityID']), htmlspecialchars($scope['data']), "\n");
+        htmlspecialchars($scope['scope']),
+        $scope['id'],
+        htmlspecialchars($scope['entityID']),
+        htmlspecialchars($scope['data']),
+        "\n"
+      );
     }
-    printf ('    %s', self::HTML_TABLE_END);
+    printf('    %s', self::HTML_TABLE_END);
   }
 
   /**
@@ -3032,28 +3797,33 @@ class MetadataDisplay extends Display\Common {
    *
    * @return void
    */
-  public function showHelp() {
+  public function showHelp()
+  {
     $federation = $this->config->getFederation();
     $federation_display_name = $federation['displayName'];
     $federation_long_name = $federation['longName'];
     print "    <p>The $federation_display_name Metadata Tool is the place where you can see,
       register, update and remove metadata for Identity Providers and
       Service Providers in the $federation_long_name.</p>\n";
-      $this->showCollapse('Request admin access', 'RequestAdminAccess', false, 0, false);?>
-
-      To be able to update, remove or confirm an entity you must have administrative access to that entity. How to request access:
-      <ol>
-        <li>Go to the tab "Published".</li>
-        <li>Choose the entity you want to have administrative access to by clicking on its entityID.</li>
-        <li>Click on the button "Request admin access" to start updating the entity.</li>
-        <li>Follow the instructions on the next web page.</li>
-        <li>Continue to the next step by pressing on the button ”Request Access”.</li>
-        <li>An e-mail will be sent to the technical and administrative contacts for confirmation of the requrest.</li>
-        <li>Reach out to the administrative contact and ask them to accept your request by following the instructions in the mail.</li>
-      </ol><?php
+    $this->showCollapse('Request admin access', 'RequestAdminAccess', false, 0, false);
+    print '
+          To be able to update, remove or confirm an entity you must have administrative access to that entity.
+          How to request access:
+          <ol>
+            <li>Go to the tab "Published".</li>
+            <li>Choose the entity you want to have administrative access to by clicking on its entityID.</li>
+            <li>Click on the button "Request admin access" to start updating the entity.</li>
+            <li>Follow the instructions on the next web page.</li>
+            <li>Continue to the next step by pressing on the button ”Request Access”.</li>
+            <li>An e-mail will be sent to the technical and administrative contacts for
+              confirmation of the requrest.</li>
+            <li>Reach out to the administrative contact and ask them to accept your request by following the
+              instructions in the mail.</li>
+          </ol>';
     $this->showCollapseEnd('RequestAdminAccess');
-    $this->showCollapse("Register a new entity in $federation_display_name", 'RegisterNewEntity', false, 0, false);?>
-
+    $this->showCollapse("Register a new entity in $federation_display_name", 'RegisterNewEntity', false, 0, false);
+    printf(
+      '
           <ol>
             <li>Go to the tab "Upload new XML".</li>
             <li>Upload the metadata file by clicking "Browse" and selecting the file on your local file system.
@@ -3076,15 +3846,21 @@ class MetadataDisplay extends Display\Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
+              %s and eduGAIN or %s Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
-            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
-          </ol><?php
+              Forward this to %s operations as described in the e-mail.</li>
+            <li>%s Operations will now check and publish the request.</li>
+          </ol>',
+      $federation_display_name,
+      $federation_display_name,
+      $federation_display_name,
+      $federation_display_name
+    );
     $this->showCollapseEnd('RegisterNewEntity');
-    $this->showCollapse("Update published entity in $federation_display_name", 'UpdateEntity', false, 0, false);?>
-
+    $this->showCollapse("Update published entity in $federation_display_name", 'UpdateEntity', false, 0, false);
+    printf(
+      '
           <ol>
             <li>Go to the tab "Published".</li>
             <li>Choose the entity you want to  update by clicking on its entityID.</li>
@@ -3105,15 +3881,21 @@ class MetadataDisplay extends Display\Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
+              %s and eduGAIN or %s Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
-            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
-          </ol><?php
+              Forward this to %s operations as described in the e-mail.</li>
+            <li>%s Operations will now check and publish the request.</li>
+          </ol>',
+      $federation_display_name,
+      $federation_display_name,
+      $federation_display_name,
+      $federation_display_name
+    );
     $this->showCollapseEnd('UpdateEntity');
-    $this->showCollapse('Continue working on a draft', 'ContinueUpdateEntity', false, 0, false);?>
-
+    $this->showCollapse('Continue working on a draft', 'ContinueUpdateEntity', false, 0, false);
+    printf(
+      '
           <ol>
             <li>Go to the tab "Drafts".</li>
             <li>Select the entity you want to continue to update by clicking on its entityID.
@@ -3132,25 +3914,30 @@ class MetadataDisplay extends Display\Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
+              %s and eduGAIN or %s Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
-            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
-          </ol><?php
+              Forward this to %s operations as described in the e-mail.</li>
+            <li>%s Operations will now check and publish the request.</li>
+          </ol>',
+      $federation_display_name,
+      $federation_display_name,
+      $federation_display_name,
+      $federation_display_name
+    );
     $this->showCollapseEnd('ContinueUpdateEntity');
-    $this->showCollapse('Stop and remove a draft update', 'DiscardDraft', false, 0, false);?>
-
+    $this->showCollapse('Stop and remove a draft update', 'DiscardDraft', false, 0, false);
+    print '
           <ol>
             <li>Go to the tab "Drafts".</li>
             <li>Select the entity for which you want to remove the draft by clicking on its entityID.
               You can only remove drafts for entities that you personally have previously started to update.</li>
             <li>Press the button ”Discard Draft”.</li>
             <li>Confirm the action by pressing the button ”Remove”.</li>
-          </ol><?php
+          </ol>';
     $this->showCollapseEnd('DiscardDraft');
-    $this->showCollapse('Withdraw a publication request', 'WithdrawPublicationRequest', false, 0, false);?>
-
+    $this->showCollapse('Withdraw a publication request', 'WithdrawPublicationRequest', false, 0, false);
+    print '
           <ol>
             <li>Go to the tab "Pending".</li>
             <li>Choose the entity for which you want to withdraw the publication request.
@@ -3160,8 +3947,7 @@ class MetadataDisplay extends Display\Common {
               ”Cancel request” before the request is processed.</li>
             <li>The entity is now back in draft mode so that you can continue to update,
               if you want to to cancel the update press the buton "Discard Draft" and "Remove" on next page.</li>
-          </ol><?php
+          </ol>';
     $this->showCollapseEnd('WithdrawPublicationRequest');
   }
-
 }

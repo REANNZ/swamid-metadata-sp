@@ -293,7 +293,11 @@ function checkEntities(&$xml)
                   default:
                     break;
                 }
-                $organization = sprintf('<a href="%s">%s</a>', htmlspecialchars($orgURL), htmlspecialchars($orgName));
+                $organization = sprintf( #NOSONAR used above
+                  '<a href="%s">%s</a>',
+                  htmlspecialchars($orgURL),
+                  htmlspecialchars($orgName)
+                );
               }
               break;
             case MD_CONTACT_PERSON:

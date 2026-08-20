@@ -43,8 +43,12 @@ if (isset($_SERVER['eduPersonAssurance'])) {
     ) {
       $assuranceHandler->bindValue(
         BIND_ASSURANCE,
-        substr(str_replace('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance), 0, 10)
-      ); # NOSONAR Should be http://
+        substr(str_replace(
+          'http://www.swamid.se/policy/assurance/al', # NOSONAR Should be http://
+          'SWAMID-AL',
+          $eduPersonAssurance
+        ), 0, 10)
+      );
       $assuranceHandler->execute();
       $foundAssurance = true;
     }
@@ -1946,8 +1950,8 @@ function annualConfirmation($entitiesId)
     if (! $confirm) {
       printf('    <br><br><h5>The following have admin-access to this entity</h5><ul>%s', "\n");
       foreach ($metadata->getResponsibles() as $user) {
-        $delete = ($user_id == $user['id'] && $userLevel < 20) ? '' :
-          sprintf(
+        $delete = ($user_id == $user['id'] && $userLevel < 20) ? ''
+          : sprintf(
             '<form action="." method="POST" name="removeEditor%d" style="display: inline;">' .
             '<input type="hidden" name="action" value="Annual Confirmation">' .
             '<input type="hidden" name="Entity" value="%d">' .

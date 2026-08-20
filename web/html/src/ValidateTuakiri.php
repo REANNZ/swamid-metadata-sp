@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata;
 
 use PDO;
@@ -7,14 +8,15 @@ use PDO;
  * Class to Validate SAML information
  * Tuakiri specific code
  */
-class ValidateTuakiri extends Validate {
+class ValidateTuakiri extends Validate
+{
   use CommonTrait;
 
   # Setup
 
-  const TEXT_HTTP = 'http://';
-  const TEXT_HTTPS = 'https://';
-  const TEXT_DATA = 'data:';
+  protected const TEXT_HTTP = 'http://';
+  protected const TEXT_HTTPS = 'https://';
+  protected const TEXT_DATA = 'data:';
 
   /**
    * Validate SAML
@@ -26,7 +28,8 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  public function saml(){
+  public function saml()
+  {
     if (! $this->entityExists) {
       return 1;
     }
@@ -36,11 +39,13 @@ class ValidateTuakiri extends Validate {
     // 5.1.1 -> 5.1.5 / 6.1.1 -> 6.1.5
     $this->checkLangElements();
     // 5.1.7 /6.1.7
-    if (! (substr($this->entityID, 0, 4) == 'urn:' ||
+    if (
+      ! (substr($this->entityID, 0, 4) == 'urn:' ||
       substr($this->entityID, 0, 8) == self::TEXT_HTTPS ||
-      substr($this->entityID, 0, 7) == self::TEXT_HTTP )) {
+      substr($this->entityID, 0, 7) == self::TEXT_HTTP)
+    ) {
         $this->error .= "entityID MUST start with either urn:, https:// or http://.\n";
-    } elseif (substr($this->entityID, 0, 4) == 'urn:' ) {
+    } elseif (substr($this->entityID, 0, 4) == 'urn:') {
       $this->warning .= "entityID SHOULD NOT start with urn: for new entities.\n";
     }
 
@@ -80,13 +85,19 @@ class ValidateTuakiri extends Validate {
     // 5.1.23 -> 5.1.28 / 6.1.21 -> 6.1.26
     $this->checkRequiredContactPersonElements();
 
-    if ($this->isSPandRandS) { $this->validateSPRandS(); }
+    if ($this->isSPandRandS) {
+      $this->validateSPRandS();
+    }
 
-    if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
-    if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
+    if ($this->isSPandCoCov1) {
+      $this->validateSPCoCov1();
+    }
+    if ($this->isSPandCoCov2) {
+      $this->validateSPCoCov2();
+    }
     if (! $this->isSIRTFI2 && $this->isIdP) {
-      $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN to support ';
-      $this->warning .= "the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
+      $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN' .
+        " to support the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
     }
     $this->saveResults();
   }
@@ -101,7 +112,8 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  private function checkLangElements() {
+  private function checkLangElements()
+  {
     $mduiArray = array();
     $usedLangArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `type`, `lang`, `element`
@@ -115,13 +127,18 @@ class ValidateTuakiri extends Validate {
         $usedLangArray[$lang] = $lang;
       } else {
         $usedLangArray[$lang] = $lang;
-        $this->error .= sprintf("Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n", $lang, $element, $type);
+        $this->error .= sprintf(
+          "Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
+          $lang,
+          $element,
+          $type
+        );
       }
 
-      if (! isset ($mduiArray[$type])) {
+      if (! isset($mduiArray[$type])) {
         $mduiArray[$type] = array();
       }
-      if (! isset ($mduiArray[$type][$element])) {
+      if (! isset($mduiArray[$type][$element])) {
         $mduiArray[$type][$element] = array();
       }
 
@@ -149,14 +166,19 @@ class ValidateTuakiri extends Validate {
       if (isset($serviceArray[$element][$index][$lang])) {
         $this->error .= sprintf(
           "More than one %s with lang=%s in AttributeConsumingService (index=%d).\n",
-          $element, $lang, $index);
+          $element,
+          $lang,
+          $index
+        );
       } else {
         $serviceArray[$element][$index][$lang] = true;
       }
     }
 
     $organizationArray = array();
-    $organizationHandler = $this->config->getDb()->prepare('SELECT `lang`, `element` FROM `Organization` WHERE `entity_id` = :Id');
+    $organizationHandler = $this->config->getDb()->prepare(
+      'SELECT `lang`, `element` FROM `Organization` WHERE `entity_id` = :Id'
+    );
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -176,7 +198,7 @@ class ValidateTuakiri extends Validate {
     foreach ($mduiArray as $type => $elementArray) {
       foreach ($elementArray as $element => $langArray) {
         foreach ($usedLangArray as $lang) {
-          if ( $lang == '' ) {
+          if ($lang == '') {
             unset($usedLangArray[$lang]);
           } elseif (! isset($langArray[$lang])) {
             $this->error .= sprintf("Missing lang=%s for mdui:%s in %sDescriptor.\n", $lang, $element, $type);
@@ -188,8 +210,12 @@ class ValidateTuakiri extends Validate {
       foreach ($indexArray as $langArray) {
         foreach ($usedLangArray as $lang) {
           if (! isset($langArray[$lang])) {
-            $this->error .= sprintf("Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
-              $lang, $element, $index);
+            $this->error .= sprintf(
+              "Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
+              $lang,
+              $element,
+              $index
+            );
           }
         }
       }
@@ -218,14 +244,15 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  private function checkEntityAttributes($type) {
+  private function checkEntityAttributes($type)
+  {
     $standardAttributes = $this->getAttributeDefs()->getStandardEntityAttributes();
 
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `attribute`
       FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
-    if ($type == 'IDPSSO' ) {
+    if ($type == 'IDPSSO') {
       // 5.1.10 Entity Categories applicable to the Identity Provider SHOULD be registered in
       ///       the entity category entity attribute as defined by the respective Entity Category.
       // Not handled yet.
@@ -242,10 +269,14 @@ class ValidateTuakiri extends Validate {
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         // detect deprecated Entity Categories
-        if (isset($standardAttributes['entity-category'][$entityAttribute['attribute']]) &&
-          ! $standardAttributes['entity-category'][$entityAttribute['attribute']]['standard']) {
-            $this->error .= sprintf ("Entity Category Error: The entity category %s is deprecated.\n",
-              $entityAttribute['attribute']);
+        if (
+          isset($standardAttributes['entity-category'][$entityAttribute['attribute']]) &&
+          ! $standardAttributes['entity-category'][$entityAttribute['attribute']]['standard']
+        ) {
+          $this->error .= sprintf(
+            "Entity Category Error: The entity category %s is deprecated.\n",
+            $entityAttribute['attribute']
+          );
         }
       }
     }
@@ -259,7 +290,8 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  private function checkIDPScope() {
+  private function checkIDPScope()
+  {
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $scopesHandler->execute();
@@ -286,7 +318,8 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  private function checkRequiredMDUIelementsIdP() {
+  private function checkRequiredMDUIelementsIdP()
+  {
     $elementArray = array ('DisplayName' => false,
       'Logo' => false);
     $mduiDNUniqHandler = $this->config->getDb()->prepare("SELECT `entityID`
@@ -305,8 +338,8 @@ class ValidateTuakiri extends Validate {
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $elementArray[$mdui['element']] = true;
-      switch($mdui['element']) {
-        case 'DisplayName' :
+      switch ($mdui['element']) {
+        case 'DisplayName':
           $data = $mdui['data'];
           $lang = $mdui['lang'];
           $entityID = $mdui['entityID'];
@@ -315,22 +348,25 @@ class ValidateTuakiri extends Validate {
           $mduiDNUniqHandler->bindParam(self::BIND_ENTITYID, $entityID);
           $mduiDNUniqHandler->execute();
           while ($duplicate = $mduiDNUniqHandler->fetch(PDO::FETCH_ASSOC)) {
-            $this->error .= sprintf("DisplayName for lang %s is also set on %s.\n",
-              $lang, htmlspecialchars($duplicate['entityID']));
+            $this->error .= sprintf(
+              "DisplayName for lang %s is also set on %s.\n",
+              $lang,
+              htmlspecialchars($duplicate['entityID'])
+            );
           }
           break;
-        case 'Logo' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,5) != self::TEXT_DATA) {
+        case 'Logo':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS && substr($mdui['data'], 0, 5) != self::TEXT_DATA) {
             $this->error .= "Logo must start with <b>https://</b> or <b>data:</b>.\n";
           }
           break;
-        case 'InformationURL' :
-        case 'PrivacyStatementURL' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
+        case 'InformationURL':
+        case 'PrivacyStatementURL':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS && substr($mdui['data'], 0, 7) != self::TEXT_HTTP) {
             $this->error .= sprintf('%s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
-        default :
+        default:
       }
     }
 
@@ -352,7 +388,8 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  private function checkRequiredMDUIelementsSP() {
+  private function checkRequiredMDUIelementsSP()
+  {
     $elementArray = array ('DisplayName' => false);
     $mduiHandler = $this->config->getDb()->prepare("SELECT DISTINCT `element`, `data`
       FROM `Mdui` WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
@@ -360,19 +397,19 @@ class ValidateTuakiri extends Validate {
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $elementArray[$mdui['element']] = true;
-      switch($mdui['element']) {
-        case 'Logo' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,5) != self::TEXT_DATA) {
+      switch ($mdui['element']) {
+        case 'Logo':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS && substr($mdui['data'], 0, 5) != self::TEXT_DATA) {
             $this->error .= "Logo must start with <b>https://</b> or <b>data:</b>.\n";
           }
           break;
-        case 'InformationURL' :
-        case 'PrivacyStatementURL' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
+        case 'InformationURL':
+        case 'PrivacyStatementURL':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS && substr($mdui['data'], 0, 7) != self::TEXT_HTTP) {
             $this->error .= sprintf('%s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
-        default :
+        default:
       }
     }
 
@@ -393,12 +430,15 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  private function checkRequiredSAMLcertificates($type) {
+  private function checkRequiredSAMLcertificates($type)
+  {
     $keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false, 'AttributeAuthority' => false);
-    $keyInfoHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
+    $keyInfoHandler = $this->config->getDb()->prepare(
+      'SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
       FROM `KeyInfo`
       WHERE `entity_id` = :Id AND `type` =:Type
-      ORDER BY notValidAfter DESC');
+      ORDER BY notValidAfter DESC'
+    );
     $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $keyInfoHandler->bindValue(self::BIND_TYPE, $type);
     $keyInfoHandler->execute();
@@ -418,36 +458,36 @@ class ValidateTuakiri extends Validate {
     while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       $validCertExists = false;
       switch ($keyInfo['use']) {
-        case 'encryption' :
+        case 'encryption':
           if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
             $keyInfoArray['SPSSO'] = true;
           }
-          if ($keyInfo['notValidAfter'] > $timeNow ) {
+          if ($keyInfo['notValidAfter'] > $timeNow) {
             $validEncryptionFound = true;
           } elseif ($validEncryptionFound) {
             $validCertExists = true;
             $oldCertFound = true;
           }
           break;
-        case 'signing' :
+        case 'signing':
           if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
             $keyInfoArray['IDPSSO'] = true;
             $keyInfoArray['AttributeAuthority'] = true;
           }
-          if ($keyInfo['notValidAfter'] > $timeNow ) {
+          if ($keyInfo['notValidAfter'] > $timeNow) {
             $validSigningFound = true;
           } elseif ($validSigningFound) {
             $validCertExists = true;
             $oldCertFound = true;
           }
           break;
-        case 'both' :
+        case 'both':
           if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
             $keyInfoArray['SPSSO'] = true;
             $keyInfoArray['IDPSSO'] = true;
             $keyInfoArray['AttributeAuthority'] = true;
           }
-          if ($keyInfo['notValidAfter'] > $timeNow ) {
+          if ($keyInfo['notValidAfter'] > $timeNow) {
             $validEncryptionFound = true;
             $validSigningFound = true;
           } elseif ($validEncryptionFound &&  $validSigningFound) {
@@ -455,45 +495,51 @@ class ValidateTuakiri extends Validate {
             $oldCertFound = true;
           }
           break;
-        default :
+        default:
           break;
       }
       switch ($keyInfo['key_type']) {
-        case 'RSA' :
-        case 'DSA' :
-          if ($keyInfo['bits'] >= 3072 ) {
+        case 'RSA':
+        case 'DSA':
+          if ($keyInfo['bits'] >= 3072) {
             $swamid521Level[$keyInfo['use']] = 3;
-          } elseif ($keyInfo['bits'] >= 2048 && $swamid521Level[$keyInfo['use']] < 2 ) {
+          } elseif ($keyInfo['bits'] >= 2048 && $swamid521Level[$keyInfo['use']] < 2) {
             $swamid521Level[$keyInfo['use']] = 2;
           } elseif ($swamid521Level[$keyInfo['use']] < 1) {
             $swamid521Level[$keyInfo['use']] = 1;
           }
-          if ($keyInfo['bits'] < 2048) { $smalKeyFound = true; }
+          if ($keyInfo['bits'] < 2048) {
+            $smalKeyFound = true;
+          }
           break;
-        case 'EC' :
-          if ($keyInfo['bits'] >= 384 ) {
-              $swamid521Level[$keyInfo['use']] = 3;
-          } elseif ($keyInfo['bits'] >= 256 && $swamid521Level[$keyInfo['use']] < 2 ) {
-              $swamid521Level[$keyInfo['use']] = 2;
-            } else {
-              $swamid521Level[$keyInfo['use']] = 1;
-            }
-          if ($keyInfo['bits'] < 256) { $smalKeyFound = true; }
+        case 'EC':
+          if ($keyInfo['bits'] >= 384) {
+            $swamid521Level[$keyInfo['use']] = 3;
+          } elseif ($keyInfo['bits'] >= 256 && $swamid521Level[$keyInfo['use']] < 2) {
+            $swamid521Level[$keyInfo['use']] = 2;
+          } else {
+            $swamid521Level[$keyInfo['use']] = 1;
+          }
+          if ($keyInfo['bits'] < 256) {
+            $smalKeyFound = true;
+          }
           break;
-        default :
-            break;
+        default:
+          break;
       }
-      if ($keyInfo['notValidAfter'] <= $timeNow ) {
+      if ($keyInfo['notValidAfter'] <= $timeNow) {
         if ($validCertExists) {
           $someCertsExpired = true;
         } else {
           $allCertsExpired = true;
         }
-      } elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
-        $this->warning .= sprintf (
+      } elseif ($keyInfo['notValidAfter'] <= $timeWarn) {
+        $this->warning .= sprintf(
           "Certificate (%s) %s will soon expire. %s\n",
-          $keyInfo['use'], htmlspecialchars($keyInfo['subject']),
-          'New certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.');
+          $keyInfo['use'],
+          htmlspecialchars($keyInfo['subject']),
+          'New certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.'
+        );
       }
 
       if ($keyInfo['subject'] != $keyInfo['issuer']) {
@@ -524,19 +570,19 @@ class ValidateTuakiri extends Validate {
     foreach (array('encryption', 'signing') as $use) {
       if ($swamid521Level[$use] > 0) {
         switch ($swamid521Level[$use]) {
-          case 3 :
+          case 3:
             // Key >= 3072 or >= 384
             // Do nothing. Keep current level.
             break;
-          case 2 :
+          case 2:
             // Key >= 2048 and < 3072  // >= 256 and <384
             $swamid521error = $swamid521error == 0 ? 1 : $swamid521error;
             break;
-          case 1 :
+          case 1:
             // To small key
             $swamid521error = 2;
             break;
-          default :
+          default:
             break;
         }
         $keyFound = true;
@@ -547,11 +593,11 @@ class ValidateTuakiri extends Validate {
     if ($swamid521Level['both'] > 0) {
       // Error code could get better if both is better than encryption/signing
       switch ($swamid521Level['both']) {
-        case 3 :
+        case 3:
           // Key >= 3072 or >= 384
           $swamid521error = 0;
           break;
-        case 2 :
+        case 2:
           // Key >= 2048 and < 3072  // >= 256 and <384
           if ($keyFound) {
             // If already checked enc/signing lower if we are better
@@ -568,7 +614,7 @@ class ValidateTuakiri extends Validate {
             $swamid521error = 2;
           }
           break;
-        default :
+        default:
       }
     }
 
@@ -593,8 +639,8 @@ class ValidateTuakiri extends Validate {
     }
 
     if ($allCertsExpired) {
-      $this->warning .= 'Signing and encryption certificates SHOULD NOT be expired. New';
-      $this->warning .= " certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.\n";
+      $this->warning .= 'Signing and encryption certificates SHOULD NOT be expired. New' .
+        " certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.\n";
     } elseif ($someCertsExpired) {
       $this->warning .= "Signing and encryption certificates SHOULD NOT be expired.\n";
     }
@@ -618,7 +664,8 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  private function checkRequiredOrganizationElements() {
+  private function checkRequiredOrganizationElements()
+  {
     $elementArray = array('OrganizationName' => false, 'OrganizationDisplayName' => false, 'OrganizationURL' => false);
 
     $organizationHandler = $this->config->getDb()->prepare('SELECT DISTINCT `element`
@@ -643,10 +690,13 @@ class ValidateTuakiri extends Validate {
    *
    * @return void
    */
-  protected function checkRequiredContactPersonElements() {
+  protected function checkRequiredContactPersonElements()
+  {
     $usedContactTypes = array();
-    $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
-      FROM `ContactPerson` WHERE `entity_id` = :Id');
+    $contactPersonHandler = $this->config->getDb()->prepare(
+      'SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
+      FROM `ContactPerson` WHERE `entity_id` = :Id'
+    );
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
 
@@ -657,9 +707,9 @@ class ValidateTuakiri extends Validate {
       //        of contactType other with remd:contactType http://refeds.org/metadata/contactType/security.
       // If the element is present, a GivenName element MUST be present and the ContactPerson MUST
       //  respect the Traffic Light Protocol (TLP) during all incident response correspondence.
-      if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
+      if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security') {
         $contactType = self::CT_SECURITY;
-        if ( $contactPerson['givenName'] == '') {
+        if ($contactPerson['givenName'] == '') {
           $this->error .= "GivenName element MUST be present for security ContactPerson.\n";
         }
       }
@@ -670,7 +720,7 @@ class ValidateTuakiri extends Validate {
       } elseif (substr($contactPerson['emailAddress'], 0, 7) != 'mailto:') {
         $this->error .= sprintf("ContactPerson [%s] EmailAddress MUST start with mailto:.\n", $contactType);
       }
-      if ( !isset($usedContactTypes[$contactType])) {
+      if (!isset($usedContactTypes[$contactType])) {
         $usedContactTypes[$contactType] = true;
       }
       $contactEmail[$contactType] = $contactPerson['emailAddress'];
@@ -678,34 +728,34 @@ class ValidateTuakiri extends Validate {
 
     if ($this->isIdP) {
       // IdPs MUST have one ContactPerson element of type technical.
-      if (!isset ($usedContactTypes['technical'])) {
+      if (!isset($usedContactTypes['technical'])) {
         $this->error .= "Missing ContactPerson of type technical.\n";
       }
     } else {
       // SPs MUST have one ContactPerson element of type administrative and/or technical.
-      if (!isset ($usedContactTypes['administrative']) && !isset ($usedContactTypes['technical'])) {
+      if (!isset($usedContactTypes['administrative']) && !isset($usedContactTypes['technical'])) {
         $this->error .= "Missing ContactPerson of type administrative and/or technical\n";
       }
       // SPs SHOULD have one ContactPerson element of type technical.
-      if (!isset ($usedContactTypes['technical'])) {
+      if (!isset($usedContactTypes['technical'])) {
         $this->warning .= "Missing ContactPerson of type technical.\n";
       }
     }
 
     // IdP or SP SHOULD have one ContactPerson element of type administrative.
-    if (!isset ($usedContactTypes['administrative'])) {
+    if (!isset($usedContactTypes['administrative'])) {
       $this->warning .= "Missing ContactPerson of type administrative.\n";
     }
 
     // IdP or SP SHOULD have one ContactPerson element of type support.
-    if (!isset ($usedContactTypes['support'])) {
+    if (!isset($usedContactTypes['support'])) {
       if ($this->isIdP) {
         $this->warning .= "Missing ContactPerson of type support.\n";
       }
     }
 
     // 5.1.28 / 6.1.26 Identity Providers SHOULD have one ContactPerson element of contactType other
-    if (!isset ($usedContactTypes[self::CT_SECURITY])) {
+    if (!isset($usedContactTypes[self::CT_SECURITY])) {
       if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } elseif ($this->isIdP) {
@@ -714,8 +764,9 @@ class ValidateTuakiri extends Validate {
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }
     } elseif (isset($contactEmail['support']) && $contactEmail['support'] == $contactEmail[self::CT_SECURITY]) {
-      $this->warning .= 'Tuakiri advises against using the same email address for both support and security contact, ';
-      $this->warning .= "as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.\n";
+      $this->warning .= 'Tuakiri advises against using the same email address for both support and security contact, ' .
+        'as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.' .
+        "\n";
     }
   }
 }

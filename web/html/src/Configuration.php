@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata;
 
 use PDO;
@@ -6,7 +7,8 @@ use PDOException;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-class Configuration {
+class Configuration
+{
   /**
    * SMTP configuration
    */
@@ -20,7 +22,7 @@ class Configuration {
   /**
    * Information for IMPS
    */
-  private $imps = false;
+  private array $imps;
 
   /**
    * Mode of application
@@ -68,7 +70,8 @@ class Configuration {
    *
    * @return void
    */
-  public function __construct($startDB = true) {
+  public function __construct($startDB = true)
+  {
     include __DIR__ . '/../config.php'; # NOSONAR
 
     $reqParams = array('db', 'smtp', 'mode', 'baseURL', 'userLevels', 'federation');
@@ -102,12 +105,12 @@ class Configuration {
       'urlCheckUA' => 'https://metadata.swamid.se/validate',
       'urlCheckDataEnabled' => false,
       'urlCheckPlainHTTPEnabled' => false,
-      'urlCheckMaxSize' => 16*1024*1024, // 16MB
+      'urlCheckMaxSize' => 16 * 1024 * 1024, // 16MB
     );
 
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {
-        printf ('Missing %s in config.php<br>', $param);
+        printf('Missing %s in config.php<br>', $param);
         exit;
       }
     }
@@ -126,7 +129,7 @@ class Configuration {
 
     # SMTP
     $this->smtp = $smtp;
-    if ( isset($smtp['sasl'])) {
+    if (isset($smtp['sasl'])) {
       $this->smtpAuth = true;
       # Default to port 587 for Auth
       # Overrided by port in $smtp in config
@@ -158,7 +161,7 @@ class Configuration {
         // set the PDO error mode to exception
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->checkDBVersion();
-      } catch(PDOException $e) {
+      } catch (PDOException $e) {
         echo "Error: " . $e->getMessage();
       }
     }
@@ -188,7 +191,8 @@ class Configuration {
    *
    * @return void
    */
-  private function checkParams(&$checkParam, $reqParams, $nameOfParam, $defaultValues = array()) {
+  private function checkParams(&$checkParam, $reqParams, $nameOfParam, $defaultValues = array())
+  {
     foreach ($defaultValues as $param => $defaultValue) {
       if (! isset($checkParam[$param])) {
         $checkParam[$param] = $defaultValue;
@@ -196,14 +200,14 @@ class Configuration {
     }
     foreach ($reqParams as $param) {
       if (! isset($checkParam[$param])) {
-        printf ('Missing $%s[%s] in config.php<br>', $nameOfParam, $param);
+        printf('Missing $%s[%s] in config.php<br>', $nameOfParam, $param);
         exit;
       }
     }
   }
 
-  const SQL_START_TRANSACTION = 'START TRANSACTION;';
-  const SQL_COMMIT = 'COMMIT;';
+  private const SQL_START_TRANSACTION = 'START TRANSACTION;';
+  private const SQL_COMMIT = 'COMMIT;';
 
   /**
    * Check Database version
@@ -212,18 +216,19 @@ class Configuration {
    *
    * @return void
    */
-  private function checkDBVersion() {
+  private function checkDBVersion()
+  {
     try {
       $dbVersionHandler = $this->db->query("SELECT `value` FROM `params` WHERE `id` = 'dbVersion';");
       $dbVersionResult = $dbVersionHandler->fetch(PDO::FETCH_ASSOC);
       $dbVersion = $dbVersionResult['value'];
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
       try {
         $dbEntityHandler = $this->db->query('SELECT `id` FROM `Entities` LIMIT 1');
         $dbEntityHandler->fetch(PDO::FETCH_ASSOC);
         // We have an existing DB. Only need to add params table;
         $dbVersion = 0;
-      } catch(PDOException $e) {
+      } catch (PDOException $e) {
         $this->createTables();
         // Don't forget to update version in createTables!!!
         $dbVersion = 4;
@@ -236,9 +241,11 @@ class Configuration {
           'CREATE TABLE `params` (
             `id` varchar(20) DEFAULT NULL,
             `value` text DEFAULT NULL
-          );');
+          );'
+        );
         $this->db->query(
-          "INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '1');");
+          "INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '1');"
+        );
 
         $this->db->query('CREATE TABLE `DiscoveryResponse` (
           `entity_id` int(10) unsigned NOT NULL,
@@ -256,7 +263,8 @@ class Configuration {
         `OrganizationName` text DEFAULT NULL,
         `OrganizationDisplayName` text DEFAULT NULL,
         `OrganizationURL` text DEFAULT NULL,
-        CONSTRAINT `OrganizationInfoData_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
+        CONSTRAINT `OrganizationInfoData_ibfk_1`
+          FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
       );');
       $this->db->query('ALTER TABLE `Entities`
         ADD `OrganizationInfo_id` int(10) unsigned DEFAULT 0 AFTER `lastValidated`');
@@ -264,12 +272,14 @@ class Configuration {
       $organizationInfoHandler = $this->db->prepare(
         'SELECT `id`, `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
           `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`
-        FROM `OrganizationInfo`;');
+        FROM `OrganizationInfo`;'
+      );
       $organizationInfoHandlerData = $this->db->prepare(
         'INSERT INTO `OrganizationInfoData` (
           `OrganizationInfo_id`, `lang`,
           `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
-        VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
+        VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);'
+      );
 
       $organizationInfoHandler->execute();
       while ($orgInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -278,13 +288,15 @@ class Configuration {
           ':Lang' => 'sv',
           ':OrganizationName' => $orgInfo['OrganizationNameSv'],
           ':OrganizationDisplayName' => $orgInfo['OrganizationDisplayNameSv'],
-          ':OrganizationURL' => $orgInfo['OrganizationURLSv']));
+          ':OrganizationURL' => $orgInfo['OrganizationURLSv']
+        ));
         $organizationInfoHandlerData->execute(array(
           ':Id' => $orgInfo['id'],
           ':Lang' => 'en',
           ':OrganizationName' => $orgInfo['OrganizationNameEn'],
           ':OrganizationDisplayName' => $orgInfo['OrganizationDisplayNameEn'],
-          ':OrganizationURL' => $orgInfo['OrganizationURLEn']));
+          ':OrganizationURL' => $orgInfo['OrganizationURLEn']
+        ));
       }
 
       $this->db->query('ALTER TABLE `OrganizationInfo`
@@ -307,7 +319,8 @@ class Configuration {
         DROP COLUMN `id`;');
       $this->db->query('ALTER TABLE `Mdui` DROP COLUMN `id`;');
       $this->db->query(
-        "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';");
+        "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';"
+      );
       $this->db->query(self::SQL_COMMIT);
     }
 
@@ -321,7 +334,8 @@ class Configuration {
         CONSTRAINT `ServiceInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
       );');
       $this->db->query(
-        "UPDATE `params` SET `value` = '3' WHERE `id` = 'dbVersion';");
+        "UPDATE `params` SET `value` = '3' WHERE `id` = 'dbVersion';"
+      );
       $this->db->query(self::SQL_COMMIT);
     }
 
@@ -337,13 +351,26 @@ class Configuration {
 
       $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
         FROM `EntityAttributes`, `Entities`
-        WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
-          AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+        WHERE `type` = 'entity-category'
+          AND `entity_id` = `Entities`.`id`
+          AND `isSP` = 1
+          AND `status` = 1
+          AND `publishIn` > 1
+          AND `attribute` IN (
+            'http://refeds.org/category/research-and-scholarship',
+            'http://www.geant.net/uri/dataprotection-code-of-conduct/v1',
+            'https://myacademicid.org/entity-categories/esi',
+            'https://refeds.org/category/anonymous',
+            'https://refeds.org/category/code-of-conduct/v2',
+            'https://refeds.org/category/personalized',
+            'https://refeds.org/category/pseudonymous'
+          )
         GROUP BY `entityID`
         ORDER BY `count`;");
 
       $this->db->query(
-        "UPDATE `params` SET `value` = '4' WHERE `id` = 'dbVersion';");
+        "UPDATE `params` SET `value` = '4' WHERE `id` = 'dbVersion';"
+      );
       $this->db->query(self::SQL_COMMIT);
     }
   }
@@ -354,7 +381,8 @@ class Configuration {
    *
    * @return void
    */
-  private function createTables() {
+  private function createTables()
+  {
 
     $this->db->query(self::SQL_START_TRANSACTION);
 
@@ -406,7 +434,8 @@ class Configuration {
       `Service_index` smallint(5) unsigned NOT NULL,
       `isDefault` tinyint(3) unsigned DEFAULT NULL,
       PRIMARY KEY (`entity_id`,`Service_index`),
-      CONSTRAINT `AttributeConsumingService_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+      CONSTRAINT `AttributeConsumingService_ibfk_1`
+        FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
 
     $this->db->query('CREATE TABLE `AttributeConsumingService_RequestedAttribute` (
@@ -419,7 +448,8 @@ class Configuration {
       `isRequired` tinyint(3) unsigned DEFAULT NULL,
       PRIMARY KEY (`id`),
       KEY `entity_id` (`entity_id`),
-      CONSTRAINT `AttributeConsumingService_RequestedAttribute_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+      CONSTRAINT `AttributeConsumingService_RequestedAttribute_ibfk_1`
+        FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
 
     $this->db->query('CREATE TABLE `AttributeConsumingService_Service` (
@@ -431,7 +461,8 @@ class Configuration {
       `data` text DEFAULT NULL,
       PRIMARY KEY (`id`),
       KEY `entity_id` (`entity_id`),
-      CONSTRAINT `AttributeConsumingService_Service_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+      CONSTRAINT `AttributeConsumingService_Service_ibfk_1`
+        FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
 
     $this->db->query("CREATE TABLE `ContactPerson` (
@@ -477,8 +508,20 @@ class Configuration {
 
     $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
       FROM `EntityAttributes`, `Entities`
-      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
-        AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+      WHERE `type` = 'entity-category'
+        AND `entity_id` = `Entities`.`id`
+        AND `isSP` = 1
+        AND `status` = 1
+        AND `publishIn` > 1
+        AND `attribute` IN (
+          'http://refeds.org/category/research-and-scholarship',
+          'http://www.geant.net/uri/dataprotection-code-of-conduct/v1',
+          'https://myacademicid.org/entity-categories/esi',
+          'https://refeds.org/category/anonymous',
+          'https://refeds.org/category/code-of-conduct/v2',
+          'https://refeds.org/category/personalized',
+          'https://refeds.org/category/pseudonymous'
+        )
       GROUP BY `entityID`
       ORDER BY `count`;");
 
@@ -548,7 +591,8 @@ class Configuration {
       PRIMARY KEY (`id`),
       KEY `OrganizationInfo_id` (`OrganizationInfo_id`),
       KEY `user_id` (`user_id`),
-      CONSTRAINT `IMPS_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `IMPS_ibfk_1`
+        FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE,
       CONSTRAINT `IMPS_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE
     );');
 
@@ -617,7 +661,8 @@ class Configuration {
         `OrganizationName` text DEFAULT NULL,
         `OrganizationDisplayName` text DEFAULT NULL,
         `OrganizationURL` text DEFAULT NULL,
-        CONSTRAINT `OrganizationInfoData_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
+        CONSTRAINT `OrganizationInfoData_ibfk_1`
+          FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
     );');
 
     $this->db->query('CREATE TABLE `Scopes` (
@@ -690,7 +735,8 @@ class Configuration {
    *
    * @return array
    */
-  public function getSMTP() {
+  public function getSMTP()
+  {
     return $this->smtp;
   }
 
@@ -701,7 +747,8 @@ class Configuration {
    *
    * @return string
    */
-  public function baseURL() {
+  public function baseURL()
+  {
     return $this->baseURL;
   }
 
@@ -712,7 +759,8 @@ class Configuration {
    *
    * @return array
    */
-  public function entitySelectionProfiles() {
+  public function entitySelectionProfiles()
+  {
     return $this->entitySelectionProfiles;
   }
 
@@ -723,7 +771,8 @@ class Configuration {
    *
    * @return bool
    */
-  public function smtpAuth() {
+  public function smtpAuth()
+  {
     return $this->smtpAuth;
   }
 
@@ -734,7 +783,8 @@ class Configuration {
    *
    * @return bool
    */
-  public function sendOut() {
+  public function sendOut()
+  {
     return $this->smtp['sendOut'];
   }
 
@@ -745,7 +795,8 @@ class Configuration {
    *
    * @return PDO
    */
-  public function getDb() {
+  public function getDb()
+  {
     return $this->db;
   }
 
@@ -756,7 +807,8 @@ class Configuration {
    *
    * @return array
    */
-  public function getUserLevels() {
+  public function getUserLevels()
+  {
     return $this->userLevels;
   }
 
@@ -767,7 +819,8 @@ class Configuration {
    *
    * @return array
    */
-  public function getFederation() {
+  public function getFederation()
+  {
     return $this->federation;
   }
 
@@ -777,14 +830,16 @@ class Configuration {
    * Return an array with configuration values for IMPS
    *
    */
-  public function getIMPS() {
+  public function getIMPS()
+  {
     return $this->imps;
   }
 
   /**
    * Return mode of application
    */
-  public function getMode() {
+  public function getMode()
+  {
     return $this->mode;
   }
 
@@ -795,7 +850,8 @@ class Configuration {
    *
    * @return instance of baseClass or if exists extended class
    */
-  public function getExtendedClass($className, ...$params) {
+  public function getExtendedClass($className, ...$params)
+  {
     $baseClass   = __NAMESPACE__ . '\\' . $className;
     $extendClass = $baseClass . ($this->federation['extend'] ?? '');
 
@@ -811,7 +867,8 @@ class Configuration {
    *
    * @return PHPMailer a fully configured instance of PHPMailer
    */
-  public function getMailer() {
+  public function getMailer()
+  {
     $mailer = new PHPMailer(true);
     $mailer->isSMTP();
     $mailer->Host = $this->smtp['host'];

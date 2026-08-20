@@ -201,10 +201,10 @@ function showEntity($entity_id, $urn = false)
   global $config, $html;
   $display = $config->getExtendedClass('MetadataDisplay');
   $federation = $config->getFederation();
-  $entityHandler = $urn ?
-    $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
-      FROM Entities WHERE entityID = :Id AND status = 1;') :
-    $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
+  $entityHandler = $urn
+    ? $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
+      FROM Entities WHERE entityID = :Id AND status = 1;')
+    : $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
       FROM Entities WHERE id = :Id;');
   $publishArray = array();
   $publishArrayOld = array();
@@ -212,6 +212,7 @@ function showEntity($entity_id, $urn = false)
   $entityHandler->bindParam(':Id', $entity_id);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+    $headerCol2 = '';
     $entities_id = $entity['id'];
     $html->setDestination('?showEntity=' . $entities_id);
     if (($entity['publishIn'] & 2) == 2) {
@@ -293,8 +294,9 @@ function showEntity($entity_id, $urn = false)
       printf(
         '      </div>
       <div class="col">
-        <h3><?=$headerCol2?></h3>
+        <h3>%s</h3>
         Published in : %s%s',
+        $headerCol2,
         implode(', ', $publishArrayOld),
         "\n"
       );
@@ -766,13 +768,13 @@ function showInterfederation($type)
       FROM ExternalEntities WHERE isIdP = 1'
     );
     foreach ($entityList as $entity) {
-      $entityId_html = $federation['mdqBaseURL'] ?
-        sprintf(
+      $entityId_html = $federation['mdqBaseURL']
+        ? sprintf(
           '<a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a>',
           urlencode($entity['entityID']),
           htmlspecialchars($entity['entityID'])
-        ) :
-        htmlspecialchars($entity['entityID']);
+        )
+        : htmlspecialchars($entity['entityID']);
       printf(
         '        <tr>
           <td>%s</td>
@@ -813,13 +815,13 @@ function showInterfederation($type)
         `organization`, `contacts`, `ec`, `assurancec`, `ra`
       FROM ExternalEntities WHERE isSP = 1');
     foreach ($entityList as $entity) {
-      $entityId_html = $federation['mdqBaseURL'] ?
-        sprintf(
+      $entityId_html = $federation['mdqBaseURL']
+        ? sprintf(
           '<a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a>',
           urlencode($entity['entityID']),
           htmlspecialchars($entity['entityID'])
-        ) :
-        htmlspecialchars($entity['entityID']);
+        )
+        : htmlspecialchars($entity['entityID']);
       printf(
         '        <tr>
           <td>%s</td>

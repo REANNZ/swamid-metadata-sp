@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata;
 
 use DOMDocument;
@@ -6,7 +7,8 @@ use DOMDocument;
 /**
  * Class to Validate XML Schemas
  */
-class ValidateXMLSchema {
+class ValidateXMLSchema
+{
   # Setup
   private string $error = 'No XML loaded';
   private bool $status = false;
@@ -19,7 +21,8 @@ class ValidateXMLSchema {
    *
    * @return void
    */
-  public function __construct($xml) {
+  public function __construct($xml)
+  {
     $this->doc = new DOMDocument('1.0', 'UTF-8');
     libxml_use_internal_errors(true);
     set_error_handler(array($this, 'checkDOMError'));
@@ -39,7 +42,8 @@ class ValidateXMLSchema {
    *
    * @return void
    */
-  public function checkDOMError ($number, $error){ #NOSONAR $number is in call!!!
+  public function checkDOMError($number, $error) #NOSONAR $number is in call!!!
+  {
     $errorParts = explode(' ', $error);
     if ($errorParts[0] == 'DOMDocument::load():') {
       $this->error = preg_replace('/ in .*, line:/', ' line:', substr($error, 21));
@@ -57,7 +61,8 @@ class ValidateXMLSchema {
    *
    * @return string Formated string with error information
    */
-  private function libxmlDisplayError($error){
+  private function libxmlDisplayError($error)
+  {
     $returnString = "<br/>\n";
     switch ($error->level) {
       case LIBXML_ERR_WARNING:
@@ -69,7 +74,7 @@ class ValidateXMLSchema {
       case LIBXML_ERR_FATAL:
         $returnString .= '<b>Fatal Error </b>: ';
         break;
-      default :
+      default:
         $returnString .= '<b> Unkown Error </b>: ';
     }
     $returnString .= htmlspecialchars(trim($error->message));
@@ -85,7 +90,8 @@ class ValidateXMLSchema {
    *
    * @return void
    */
-  private function libxmlDisplayErrors() {
+  private function libxmlDisplayErrors()
+  {
     $errors = libxml_get_errors();
     foreach ($errors as $error) {
       $this->error .= $this->libxmlDisplayError($error);
@@ -100,12 +106,13 @@ class ValidateXMLSchema {
    *
    * @return bool
    */
-  public function validateSchema($schema) {
+  public function validateSchema($schema)
+  {
     if ($this->status) {
       set_error_handler(array($this, 'checkDOMError'));
-       if (! $this->status = $this->doc->schemaValidate($schema)) {
+      if (! $this->status = $this->doc->schemaValidate($schema)) {
         $this->libxmlDisplayErrors();
-       }
+      }
       restore_error_handler();
     }
     return $this->status;
@@ -116,7 +123,8 @@ class ValidateXMLSchema {
    *
    * @return string
    */
-  public function getError() {
+  public function getError()
+  {
     return $this->error;
   }
 }

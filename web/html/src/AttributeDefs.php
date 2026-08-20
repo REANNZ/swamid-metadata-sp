@@ -1,15 +1,17 @@
 <?php
+
 namespace metadata;
 
 /**
  * Class to hold (and allow extending) attribute definitions
  */
-class AttributeDefs {
+class AttributeDefs
+{
   /**
    * STANDARD_ATTRIBUTES
    *
    */
-  const STANDARD_ATTRIBUTES = array(
+  protected const STANDARD_ATTRIBUTES = array(
     'assurance-certification' => array(
       'http://www.swamid.se/policy/assurance/al1' => array( # NOSONAR Should be http://
         'type' => 'IdP', 'standard' => true
@@ -93,7 +95,7 @@ class AttributeDefs {
    * FRIENDLY_NAMES
    *
    */
-  const FRIENDLY_NAMES = array(
+  protected const FRIENDLY_NAMES = array(
     'urn:oid:2.5.4.6' => array(
       'desc' => 'c', 'standard' => true
     ),
@@ -206,7 +208,8 @@ class AttributeDefs {
    * @return array
    */
 
-  public function getStandardEntityAttributes() {
+  public function getStandardEntityAttributes()
+  {
     return self::STANDARD_ATTRIBUTES;
   }
 
@@ -216,7 +219,8 @@ class AttributeDefs {
    * @return array
    */
 
-  public function getAttributeFriendlyNames() {
+  public function getAttributeFriendlyNames()
+  {
     return self::FRIENDLY_NAMES;
   }
 }

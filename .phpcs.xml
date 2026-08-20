@@ -29,6 +29,12 @@
     </properties>
   </rule>
 
+  <rule ref="Squiz.Functions.MultiLineFunctionDeclaration">
+    <properties>
+      <property name="indent" value="2" />
+    </properties>
+  </rule>
+
   <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
     <exclude-pattern>web/html/index.php</exclude-pattern>
     <exclude-pattern>web/html/admin/index.php</exclude-pattern>

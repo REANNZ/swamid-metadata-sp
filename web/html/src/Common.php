@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata;
 
 use PDO;
@@ -9,7 +10,8 @@ use CurlHandle;
 /**
  * Class to collect common functions for Validate and ParseXML
  */
-class Common {
+class Common
+{
   use SAMLTrait;
 
   # Setup
@@ -35,45 +37,45 @@ class Common {
   protected DOMElement $entityDescriptor;
   private bool $handleXML = true;
 
-  const BIND_BITS = ':Bits';
-  const BIND_COCOV1STATUS = ':Cocov1Status';
-  const BIND_CONTACTTYPE = ':ContactType';
-  const BIND_DATA = ':Data';
-  const BIND_ELEMENT = ':Element';
-  const BIND_EMAIL = ':Email';
-  const BIND_ENTITYID = ':EntityID';
-  const BIND_ERRORS = ':Errors';
-  const BIND_ERRORSNB = ':ErrorsNB';
-  const BIND_FRIENDLYNAME = ':FriendlyName';
-  const BIND_FULLNAME = ':FullName';
-  const BIND_HEIGHT = ':Height';
-  const BIND_ID = ':Id';
-  const BIND_INDEX = ':Index';
-  const BIND_ISREQUIRED = ':IsRequired';
-  const BIND_ISSUER = ':Issuer';
-  const BIND_KEY_TYPE = ':Key_type';
-  const BIND_LANG = ':Lang';
-  const BIND_NAME = ':Name';
-  const BIND_NAMEFORMAT = ':NameFormat';
-  const BIND_NOSIZE = ':NoSize';
-  const BIND_NOTVALIDAFTER = ':NotValidAfter';
-  const BIND_ORDER = ':Order';
-  const BIND_REGEXP = ':Regexp';
-  const BIND_REGISTRATIONINSTANT = ':RegistrationInstant';
-  const BIND_RESULT = ':Result';
-  const BIND_SCOPE = ':Scope';
-  const BIND_SERIALNUMBER = ':SerialNumber';
-  const BIND_STATUS = ':Status';
-  const BIND_SUBJECT = ':Subject';
-  const BIND_TYPE = ':Type';
-  const BIND_URL = ':URL';
-  const BIND_USE = ':Use';
-  const BIND_VALIDATIONOUTPUT = ':validationOutput';
-  const BIND_VALUE = ':Value';
-  const BIND_WARNINGS = ':Warnings';
-  const BIND_WIDTH = ':Width';
-  const BIND_XML = ':Xml';
-  const HTTP_MAX_REDIRECTS = 20; # PHP default
+  protected const BIND_BITS = ':Bits';
+  protected const BIND_COCOV1STATUS = ':Cocov1Status';
+  protected const BIND_CONTACTTYPE = ':ContactType';
+  protected const BIND_DATA = ':Data';
+  protected const BIND_ELEMENT = ':Element';
+  protected const BIND_EMAIL = ':Email';
+  protected const BIND_ENTITYID = ':EntityID';
+  protected const BIND_ERRORS = ':Errors';
+  protected const BIND_ERRORSNB = ':ErrorsNB';
+  protected const BIND_FRIENDLYNAME = ':FriendlyName';
+  protected const BIND_FULLNAME = ':FullName';
+  protected const BIND_HEIGHT = ':Height';
+  protected const BIND_ID = ':Id';
+  protected const BIND_INDEX = ':Index';
+  protected const BIND_ISREQUIRED = ':IsRequired';
+  protected const BIND_ISSUER = ':Issuer';
+  protected const BIND_KEY_TYPE = ':Key_type';
+  protected const BIND_LANG = ':Lang';
+  protected const BIND_NAME = ':Name';
+  protected const BIND_NAMEFORMAT = ':NameFormat';
+  protected const BIND_NOSIZE = ':NoSize';
+  protected const BIND_NOTVALIDAFTER = ':NotValidAfter';
+  protected const BIND_ORDER = ':Order';
+  protected const BIND_REGEXP = ':Regexp';
+  protected const BIND_REGISTRATIONINSTANT = ':RegistrationInstant';
+  protected const BIND_RESULT = ':Result';
+  protected const BIND_SCOPE = ':Scope';
+  protected const BIND_SERIALNUMBER = ':SerialNumber';
+  protected const BIND_STATUS = ':Status';
+  protected const BIND_SUBJECT = ':Subject';
+  protected const BIND_TYPE = ':Type';
+  protected const BIND_URL = ':URL';
+  protected const BIND_USE = ':Use';
+  protected const BIND_VALIDATIONOUTPUT = ':validationOutput';
+  protected const BIND_VALUE = ':Value';
+  protected const BIND_WARNINGS = ':Warnings';
+  protected const BIND_WIDTH = ':Width';
+  protected const BIND_XML = ':Xml';
+  protected const HTTP_MAX_REDIRECTS = 20; # PHP default
 
   /**
    * Setup the class
@@ -84,7 +86,8 @@ class Common {
    *
    * @return void
    */
-  public function __construct($id = 0, $handleXML = true) {
+  public function __construct($id = 0, $handleXML = true)
+  {
     global $config;
     $this->handleXML = $handleXML;
     if (isset($config)) {
@@ -115,7 +118,7 @@ class Common {
         $this->result = strval($entity['validationOutput']);
         $this->registrationInstant = strval($entity['registrationInstant']);
         if ($this->handleXML) {
-          $this->xml = new DOMDocument;
+          $this->xml = new DOMDocument();
           $this->xml->preserveWhiteSpace = false;
           $this->xml->formatOutput = true;
           $this->xml->loadXML($entity['xml']);
@@ -140,7 +143,8 @@ class Common {
    *
    * @return void
    */
-  protected function addURL($url, $type) {
+  protected function addURL($url, $type)
+  {
     $urlHandler = $this->config->getDb()->prepare('SELECT `type` FROM `URLs` WHERE `URL` = :URL');
     $urlHandler->bindValue(self::BIND_URL, $url);
     $urlHandler->execute();
@@ -178,8 +182,11 @@ class Common {
    *
    * @return void
    */
-  public function revalidateURL($url, $verbose = false) {
-    $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE `URLs` SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;");
+  public function revalidateURL($url, $verbose = false)
+  {
+    $urlUpdateHandler = $this->config->getDb()->prepare(
+      "UPDATE `URLs` SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;"
+    );
     $urlUpdateHandler->bindParam(self::BIND_URL, $url);
     $urlUpdateHandler->execute();
     $this->validateURLs(5, $verbose);
@@ -197,16 +204,22 @@ class Common {
    *
    * @return void
    */
-  public function validateURLs($limit=10, $verbose = false){
+  public function validateURLs($limit = 10, $verbose = false)
+  {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_HEADER, 0);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
     curl_setopt($ch, CURLOPT_USERAGENT, $this->config->getFederation()['urlCheckUA']);
-    curl_setopt($ch, CURLOPT_PROTOCOLS, $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
+    curl_setopt(
+      $ch,
+      CURLOPT_PROTOCOLS,
+      $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS
+    );
     curl_setopt($ch, CURLOPT_MAXFILESIZE, $this->config->getFederation()['urlCheckMaxSize']);
 
-    $allowed_schemes = $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
+    $allowed_schemes =
+      $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
     $default_ports = array( 'http' => 80, 'https' => 443);
 
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
@@ -218,13 +231,12 @@ class Common {
       SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status,
         `height` = :Height, `width` = :Width, `nosize` = :NoSize, `validationOutput` = :Result
       WHERE `URL` = :URL;");
-    $sql = ($limit > 10) ?
-      "SELECT `URL`, `type` FROM `URLs`
+    $sql = ($limit > 10)
+      ? "SELECT `URL`, `type` FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
           OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-6:0:0'))
         ORDER BY `lastValidated` LIMIT $limit;"
-    :
-      "SELECT `URL`, `type`
+      : "SELECT `URL`, `type`
         FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-20 0:0:0')
           OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-8:0:0'))
@@ -250,11 +262,17 @@ class Common {
         $parsed_url = parse_url($target_url);
         $url_scheme = $parsed_url['scheme'] ?? '';
         // guard against missing componets
-        if ($parsed_url && in_array($url_scheme, $allowed_schemes) && ($parsed_url['port'] ?? $default_ports[$url_scheme]) == $default_ports[$url_scheme]) {
+        if (
+          $parsed_url && in_array($url_scheme, $allowed_schemes) &&
+          ($parsed_url['port'] ?? $default_ports[$url_scheme]) == $default_ports[$url_scheme]
+        ) {
           curl_setopt($ch, CURLOPT_URL, $target_url);
           $output = curl_exec($ch);
           // check if we received a valid redirect
-          if (curl_errno($ch) === 0 && in_array(curl_getinfo($ch, CURLINFO_HTTP_CODE), array(301, 302, 303, 307, 308)) ) {
+          if (
+            curl_errno($ch) === 0 &&
+            in_array(curl_getinfo($ch, CURLINFO_HTTP_CODE), array(301, 302, 303, 307, 308))
+          ) {
             $needs_redirect = true;
             $redirects_found++;
             $target_url = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
@@ -269,7 +287,11 @@ class Common {
           } else {
             $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
           }
-        } elseif ($url['type'] == 1 && $this->config->getFederation()['urlCheckDataEnabled'] && $redirects_found==0 && preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $target_url, $data_matches)) {
+        } elseif (
+          $url['type'] == 1 &&
+          $this->config->getFederation()['urlCheckDataEnabled'] && $redirects_found == 0 &&
+          preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $target_url, $data_matches)
+        ) {
            $this->checkDataURL($data_matches[1], $data_matches[2], $url['type'], $updateArray, $verboseInfo);
         } else { //invalid URL
           $updateArray[self::BIND_RESULT] = 'Invalid URL';
@@ -284,15 +306,15 @@ class Common {
       }
       $this->checkURLStatus($url['URL'], $verbose);
       $urlUpdateHandler->execute($updateArray);
-      $count ++;
-      $verboseInfo .= sprintf ('      </td></tr>%s', "\n");
+      $count++;
+      $verboseInfo .= sprintf('      </td></tr>%s', "\n");
     }
     if ($verbose) {
       printf('    <table class="table table-striped table-bordered">%s%s    </table>%s', "\n", $verboseInfo, "\n");
     }
     curl_close($ch);
     if ($limit > 10) {
-      printf ("Checked %d URL:s\n", $count);
+      printf("Checked %d URL:s\n", $count);
     }
   }
 
@@ -311,13 +333,14 @@ class Common {
    *
    * @return void
    */
-  private function checkCurlReturnCode($ch, $output, $type, &$updateArray, &$verboseInfo) {
+  private function checkCurlReturnCode($ch, $output, $type, &$updateArray, &$verboseInfo)
+  {
     global $config;
     switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
-      case 200 :
+      case 200:
         $verboseInfo .= 'OK : content-type = ' . htmlspecialchars(curl_getinfo($ch, CURLINFO_CONTENT_TYPE));
-        if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
-          if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
+        if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE), 0, 6) == 'image/') {
+          if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE), 0, 13) == 'image/svg+xml') {
             $updateArray[self::BIND_NOSIZE] = 1;
           } else {
             $size = getimagesizefromstring($output);
@@ -333,7 +356,7 @@ class Common {
           }
         }
         if ($type == 3) {
-          if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
+          if (strpos($output, self::SAML_EC_COCOV1) > 1) {
             $updateArray[self::BIND_RESULT] = 'Policy OK';
             $updateArray[self::BIND_STATUS] = 0;
             $updateArray[self::BIND_COCOV1STATUS] = 0;
@@ -348,28 +371,32 @@ class Common {
           $updateArray[self::BIND_COCOV1STATUS] = 0;
         }
         break;
-      case 403 :
+      case 403:
         $verboseInfo .= '403';
         $updateArray[self::BIND_RESULT] = "Access denied. Can't check URL.";
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
         break;
-      case 404 :
+      case 404:
         $verboseInfo .= '404';
         $updateArray[self::BIND_RESULT] = 'Page not found.';
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
         break;
-      case 503 :
+      case 503:
         $verboseInfo .= '503';
         $updateArray[self::BIND_RESULT] = "Service Unavailable. Can't check URL.";
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
         break;
-      default :
+      default:
         $verboseInfo .= $http_code;
-        $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from final URL %s. Can't handle :-(",
-          $config->getFederation()['teamMail'], $http_code, htmlspecialchars(curl_getinfo($ch, CURLINFO_EFFECTIVE_URL)));
+        $updateArray[self::BIND_RESULT] = sprintf(
+          "Contact %s. Got code %d from final URL %s. Can't handle :-(",
+          $config->getFederation()['teamMail'],
+          $http_code,
+          htmlspecialchars(curl_getinfo($ch, CURLINFO_EFFECTIVE_URL))
+        );
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
@@ -390,13 +417,14 @@ class Common {
    *
    * @return void
    */
-  private function checkDataURL($media_type, $data, $type, &$updateArray, &$verboseInfo) {
+  private function checkDataURL($media_type, $data, $type, &$updateArray, &$verboseInfo)
+  {
 
-    $valid = $media_type && $data && ($data_decoded=base64_decode($data));
+    $valid = $media_type && $data && ($data_decoded = base64_decode($data));
     if ($valid) {
       $verboseInfo .= 'OK : content-type = ' . htmlspecialchars($media_type) . "<br>\n";
-      if (substr($media_type,0,6) == 'image/') {
-        if (substr($media_type,0,13) == 'image/svg+xml') {
+      if (substr($media_type, 0, 6) == 'image/') {
+        if (substr($media_type, 0, 13) == 'image/svg+xml') {
           $updateArray[self::BIND_NOSIZE] = 1;
         } else {
           $size = getimagesizefromstring(base64_decode($data));
@@ -421,14 +449,18 @@ class Common {
         $updateArray[self::BIND_COCOV1STATUS] = 0;
       }
     } else {
-        $verboseInfo .= ($media_type ? sprintf("content-type = %s", htmlspecialchars($media_type)) : 'Missing content-type in <code>data:</code> URL') . "<br>\n";
-        $verboseInfo .= sprintf("encoded data size: %d<br>\n", strlen($data));
-        if (isset($data_decoded)) {
-          $verboseInfo .= sprintf("decoded data size: %d<br>\n", strlen($data_decoded));
-        }
-        $updateArray[self::BIND_RESULT] = "Invalid <code>data:</code> URL";
-        $updateArray[self::BIND_STATUS] = 2;
-        $updateArray[self::BIND_COCOV1STATUS] = 1;
+      $verboseInfo .= (
+        $media_type
+          ? sprintf("content-type = %s", htmlspecialchars($media_type))
+          : 'Missing content-type in <code>data:</code> URL'
+        ) . "<br>\n";
+      $verboseInfo .= sprintf("encoded data size: %d<br>\n", strlen($data));
+      if (isset($data_decoded)) {
+        $verboseInfo .= sprintf("decoded data size: %d<br>\n", strlen($data_decoded));
+      }
+      $updateArray[self::BIND_RESULT] = "Invalid <code>data:</code> URL";
+      $updateArray[self::BIND_STATUS] = 2;
+      $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
   }
 
@@ -445,12 +477,15 @@ class Common {
    *
    * @return void
    */
-  public function checkOldURLS($age = 30, $verbose = false) {
+  public function checkOldURLS($age = 30, $verbose = false)
+  {
     $sql = sprintf("SELECT `URL`, `lastSeen` from `URLs` where `lastSeen` < ADDTIME(NOW(), '-%d 0:0:0')", $age);
     $urlHandler = $this->config->getDb()->prepare($sql);
     $urlHandler->execute();
     while ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($verbose) { printf ("Checking : %s last seen %s\n", $urlInfo['URL'], $urlInfo['lastSeen']); }
+      if ($verbose) {
+        printf("Checking : %s last seen %s\n", $urlInfo['URL'], $urlInfo['lastSeen']);
+      }
       $this->checkURLStatus($urlInfo['URL'], $verbose);
     }
   }
@@ -466,7 +501,8 @@ class Common {
    *
    * @return void
    */
-  private function checkURLStatus($url, $verbose = false){
+  private function checkURLStatus($url, $verbose = false)
+  {
     $urlHandler = $this->config->getDb()->prepare('SELECT `type`, `validationOutput`, `lastValidated`
       FROM `URLs` WHERE `URL` = :URL');
     $urlHandler->bindValue(self::BIND_URL, $url);
@@ -475,24 +511,41 @@ class Common {
       $missing = true;
       $coCoV1 = false;
       $logo = false;
-      $entityHandler = $this->config->getDb()->prepare('SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
-        FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL AND `Entities`.`status` < 4');
+      $entityHandler = $this->config->getDb()->prepare(
+        'SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `EntityURLs`, `Entities`
+        WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL AND `Entities`.`status` < 4'
+      );
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
-      $serviceInfoHandler = $this->config->getDb()->prepare('SELECT `ServiceInfo`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
-        FROM `ServiceInfo`, `Entities` WHERE `ServiceInfo`.`entity_id` = `Entities`.`id` AND `ServiceInfo`.`ServiceURL` = :URL AND `Entities`.`status` < 4');
+      $serviceInfoHandler = $this->config->getDb()->prepare(
+        'SELECT `ServiceInfo`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `ServiceInfo`, `Entities`
+        WHERE `ServiceInfo`.`entity_id` = `Entities`.`id`
+          AND `ServiceInfo`.`ServiceURL` = :URL
+          AND `Entities`.`status` < 4'
+      );
       $serviceInfoHandler->bindValue(self::BIND_URL, $url);
       $serviceInfoHandler->execute();
-      $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
-        FROM `Mdui`, `Entities` WHERE `Mdui`.`entity_id` = `Entities`.`id` AND `data` = :URL AND `status`< 4');
+      $ssoUIIHandler = $this->config->getDb()->prepare(
+        'SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
+        FROM `Mdui`, `Entities`
+        WHERE `Mdui`.`entity_id` = `Entities`.`id` AND `data` = :URL AND `status`< 4'
+      );
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
       $ssoUIIHandler->execute();
-      $organizationHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
-        FROM `Organization`, `Entities` WHERE `entity_id` = `id` AND `data` = :URL AND `status`< 4');
+      $organizationHandler = $this->config->getDb()->prepare(
+        'SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
+        FROM `Organization`, `Entities`
+        WHERE `entity_id` = `id` AND `data` = :URL AND `status`< 4'
+      );
       $organizationHandler->bindValue(self::BIND_URL, $url);
       $organizationHandler->execute();
-      $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
-        FROM `EntityAttributes` WHERE `entity_id` = :Id AND type = 'entity-category'");
+      $entityAttributesHandler = $this->config->getDb()->prepare(
+        "SELECT `attribute`
+        FROM `EntityAttributes`
+        WHERE `entity_id` = :Id AND type = 'entity-category'"
+      );
       if ($entityHandler->fetch(PDO::FETCH_ASSOC)) {
         $missing = false;
       }
@@ -504,21 +557,24 @@ class Common {
           $entityAttributesHandler->bindParam(self::BIND_ID, $entity['entity_id']);
           $entityAttributesHandler->execute();
           while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-            if ($attribute['attribute'] == 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') { # NOSONAR Should be http://
+            if (
+              $attribute['attribute'] ==
+                'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' # NOSONAR Should be http://
+            ) {
               $coCoV1 = true;
             }
           }
         }
         switch ($entity['element']) {
-          case 'Logo' :
+          case 'Logo':
             $logo = true;
             $missing = false;
             break;
-          case 'InformationURL' :
-          case 'PrivacyStatementURL' :
+          case 'InformationURL':
+          case 'PrivacyStatementURL':
             $missing = false;
             break;
-          default :
+          default:
             break;
         }
       }
@@ -531,8 +587,10 @@ class Common {
         $urlHandler = $this->config->getDb()->prepare('DELETE FROM `URLs` WHERE `URL` = :URL');
         $urlHandler->bindValue(self::BIND_URL, $url);
         $urlHandler->execute();
-        if ($verbose) { print "Removing URL. Not in use any more\n"; }
-      } elseif ($urlInfo['type'] > 2 && !$coCoV1 ) {
+        if ($verbose) {
+          print "Removing URL. Not in use any more\n";
+        }
+      } elseif ($urlInfo['type'] > 2 && !$coCoV1) {
         if ($logo) {
           $urlHandler = $this->config->getDb()->prepare('UPDATE `URLs` SET `type` = 2 WHERE `URL` = :URL');
         } else {
@@ -540,7 +598,9 @@ class Common {
         }
         $urlHandler->bindValue(self::BIND_URL, $url);
         $urlHandler->execute();
-        if ($verbose) { print "Not CoCo v1 any more. Removes that flag.\n"; }
+        if ($verbose) {
+          print "Not CoCo v1 any more. Removes that flag.\n";
+        }
       }
     }
   }
@@ -550,7 +610,8 @@ class Common {
    *
    * @return string
    */
-  public function getResult() {
+  public function getResult()
+  {
     return $this->result;
   }
 
@@ -559,7 +620,8 @@ class Common {
    *
    * @return void
    */
-  public function clearResult() {
+  public function clearResult()
+  {
     $this->result = '';
   }
 
@@ -568,7 +630,8 @@ class Common {
    *
    * @return string
    */
-  public function getWarning() {
+  public function getWarning()
+  {
     return $this->warning;
   }
 
@@ -577,7 +640,8 @@ class Common {
    *
    * @return void
    */
-  public function clearWarning() {
+  public function clearWarning()
+  {
     $this->warning = '';
   }
 
@@ -586,7 +650,8 @@ class Common {
    *
    * @return string
    */
-  public function getError() {
+  public function getError()
+  {
     return $this->error . $this->errorNB;
   }
 
@@ -595,7 +660,8 @@ class Common {
    *
    * @return void
    */
-  public function clearError() {
+  public function clearError()
+  {
     $this->error = '';
     $this->errorNB = '';
   }
@@ -605,7 +671,8 @@ class Common {
    *
    * @return void
    */
-  public function saveResults() {
+  public function saveResults()
+  {
     $sql = 'UPDATE `Entities`
       SET `validationOutput` = :validationOutput,
         `warnings` = :Warnings,
@@ -637,7 +704,8 @@ class Common {
    *
    * @return DOMElement
    */
-  protected function getEntityDescriptor($xml) {
+  protected function getEntityDescriptor($xml)
+  {
     $child = $xml->firstChild;
     while ($child) {
       if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
@@ -660,25 +728,26 @@ class Common {
    *
    * @return DOMElement
    */
-  protected function getExtensions($create = true) {
+  protected function getExtensions($create = true)
+  {
     # Find md:Extensions in XML
     $child = $this->entityDescriptor->firstChild;
     $extensions = null;
     while ($child && ! $extensions) {
       switch ($child->nodeName) {
-        case self::SAML_MD_EXTENSIONS :
+        case self::SAML_MD_EXTENSIONS:
           $extensions = $child;
           break;
-        case self::SAML_MD_SPSSODESCRIPTOR :
-        case self::SAML_MD_IDPSSODESCRIPTOR :
-        case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-        case self::SAML_MD_PDPDESCRIPTOR :
-        case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-        case self::SAML_MD_ORGANIZATION :
-        case self::SAML_MD_CONTACTPERSON :
-        case self::SAML_MD_ADDITIONALMETADATALOCATION :
-        default :
+        case self::SAML_MD_SPSSODESCRIPTOR:
+        case self::SAML_MD_IDPSSODESCRIPTOR:
+        case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR:
+        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR:
+        case self::SAML_MD_PDPDESCRIPTOR:
+        case self::SAML_MD_AFFILIATIONDESCRIPTOR:
+        case self::SAML_MD_ORGANIZATION:
+        case self::SAML_MD_CONTACTPERSON:
+        case self::SAML_MD_ADDITIONALMETADATALOCATION:
+        default:
           if ($create) {
             $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
             $this->entityDescriptor->insertBefore($extensions, $child);
@@ -705,15 +774,16 @@ class Common {
    *
    * @return DOMNode|bool
    */
-  protected function getSSODecriptor($type) {
+  protected function getSSODecriptor($type)
+  {
     switch ($type) {
-      case 'SPSSO' :
+      case 'SPSSO':
         $ssoDescriptorName = self::SAML_MD_SPSSODESCRIPTOR;
         break;
-      case 'IDPSSO' :
+      case 'IDPSSO':
         $ssoDescriptorName = self::SAML_MD_IDPSSODESCRIPTOR;
         break;
-      case 'AttributeAuthority' :
+      case 'AttributeAuthority':
         $ssoDescriptorName = self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR;
         break;
       default:
@@ -739,7 +809,8 @@ class Common {
    *
    * @return DOMNode|bool
    */
-  protected function getSSODescriptorExtensions($ssoDescriptor, $create = true) {
+  protected function getSSODescriptorExtensions($ssoDescriptor, $create = true)
+  {
     $child = $ssoDescriptor->firstChild;
     $extensions = null;
     if ($child) {
@@ -749,7 +820,7 @@ class Common {
         $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
         $ssoDescriptor->insertBefore($extensions, $child);
       }
-    } elseif($create) {
+    } elseif ($create) {
       $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
       $ssoDescriptor->appendChild($extensions);
     }
@@ -767,32 +838,36 @@ class Common {
    *
    * @return DOMNode|bool
    */
-  protected function getUUInfo($extensions, $create = true) {
+  protected function getUUInfo($extensions, $create = true)
+  {
     $child = $extensions->firstChild;
     $uuInfo = null;
     $mduiFound = false;
     while ($child && ! $uuInfo) {
       switch ($child->nodeName) {
-        case self::SAML_MDUI_UIINFO :
+        case self::SAML_MDUI_UIINFO:
           $mduiFound = true;
           $uuInfo = $child;
           break;
-        case self::SAML_MDUI_DISCOHINTS :
+        case self::SAML_MDUI_DISCOHINTS:
           $mduiFound = true;
           if ($create) {
             $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
             $extensions->insertBefore($uuInfo, $child);
           }
           break;
-        default :
+        default:
           $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
           $extensions->appendChild($uuInfo);
       }
       $child = $child->nextSibling;
     }
     if (! $mduiFound) {
-      $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI,
-        self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
+      $this->entityDescriptor->setAttributeNS(
+        self::SAMLXMLNS_URI,
+        self::SAMLXMLNS_MDUI,
+        self::SAMLXMLNS_MDUI_URL
+      );
     }
     return $uuInfo;
   }
@@ -809,10 +884,13 @@ class Common {
    * @return void
    */
 
-  public function getServiceInfo($dbIdNr, &$serviceURL, &$enabled) {
+  public function getServiceInfo($dbIdNr, &$serviceURL, &$enabled)
+  {
     $serviceURL = '';
     $enabled = 0;
-    $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled` FROM `ServiceInfo` WHERE `entity_id` = :Id;");
+    $serviceInfoHandler = $this->config->getDb()->prepare(
+      "SELECT `ServiceURL`, `enabled` FROM `ServiceInfo` WHERE `entity_id` = :Id;"
+    );
     $serviceInfoHandler->bindParam(self::BIND_ID, $dbIdNr);
     $serviceInfoHandler->execute();
     if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -833,11 +911,13 @@ class Common {
    * @return void
    */
 
-  public function storeServiceInfo($dbIdNr, $serviceURL, $enabled = true) {
+  public function storeServiceInfo($dbIdNr, $serviceURL, $enabled = true)
+  {
     $strSrvInfHandler = $this->config->getDb()->prepare(
-        'INSERT INTO `ServiceInfo` ( `entity_id`, `ServiceURL`, `enabled`) ' .
-        'VALUES (:Id, :ServiceURL, :enabled) ' .
-        'ON DUPLICATE KEY UPDATE `ServiceURL` = :ServiceURL, `enabled` = :enabled;');
+      'INSERT INTO `ServiceInfo` ( `entity_id`, `ServiceURL`, `enabled`) ' .
+      'VALUES (:Id, :ServiceURL, :enabled) ' .
+      'ON DUPLICATE KEY UPDATE `ServiceURL` = :ServiceURL, `enabled` = :enabled;'
+    );
     $strSrvInfHandler->bindParam(self::BIND_ID, $dbIdNr);
     $strSrvInfHandler->bindParam(':ServiceURL', $serviceURL);
     $strSrvInfHandler->bindParam(':enabled', $enabled);
@@ -854,7 +934,8 @@ class Common {
    * @return void
    */
 
-  public function removeServiceInfo($dbIdNr) {
+  public function removeServiceInfo($dbIdNr)
+  {
     $delSrvInfHandler = $this->config->getDb()->prepare("DELETE FROM `ServiceInfo` WHERE `entity_id` = :Id;");
     $delSrvInfHandler->bindParam(self::BIND_ID, $dbIdNr);
     $delSrvInfHandler->execute();
@@ -866,7 +947,8 @@ class Common {
    * @return AttributeDefs
    */
 
-  public function getAttributeDefs() {
+  public function getAttributeDefs()
+  {
     if (!self::$attributeDefs) {
       self::$attributeDefs = $this->config->getExtendedClass('AttributeDefs');
     }
