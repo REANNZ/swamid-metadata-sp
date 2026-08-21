@@ -172,10 +172,9 @@ class Statistics extends Common
     $nrOfIdPs = 0;
 
     $federation = $this->config->getFederation();
-    $entitys = $this->config->getDb()->prepare(
+    $entitys = $this->config->getDb()->query(
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;"
     );
-    $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
       switch ($row['publishIn']) {
         case 1:
@@ -213,10 +212,9 @@ class Statistics extends Common
     array_unshift($spArray, $nrOfSPs);
     array_unshift($idpArray, $nrOfIdPs);
 
-    $statusRows = $this->config->getDb()->prepare(
+    $statusRows = $this->config->getDb()->query(
       "SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM `EntitiesStatistics` ORDER BY `date` DESC;"
     );
-    $statusRows->execute();
     while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
       $dateLabel = substr($row['date'], 2, 8);
       printf(
@@ -458,10 +456,10 @@ class Statistics extends Common
    */
   protected function showEcStatistics()
   {
-    $spHandler = $this->config->getDb()->prepare(
+    $spHandler = $this->config->getDb()->query(
       'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isSP` = 1 AND `status` = 1 AND `publishIn` > 1;'
     );
-    $entityAttributesHandler = $this->config->getDb()->prepare(
+    $entityAttributesHandler = $this->config->getDb()->query(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
       FROM `EntityAttributes`, `Entities`
       WHERE `type` = 'entity-category'
@@ -471,7 +469,7 @@ class Statistics extends Common
         AND `publishIn` > 1
       GROUP BY `attribute`;"
     );
-    $bothCoCoHandler = $this->config->getDb()->prepare(
+    $bothCoCoHandler = $this->config->getDb()->query(
       "SELECT COUNT(`attribute`) AS `count`
       FROM `EntityAttributes`
       WHERE `type` = 'entity-category' AND
@@ -486,7 +484,7 @@ class Statistics extends Common
           `publishIn` > 1 AND
           `attribute`= 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1');"
     );
-    $bothRASandPers = $this->config->getDb()->prepare(
+    $bothRASandPers = $this->config->getDb()->query(
       "SELECT COUNT(`attribute`) AS `count`
       FROM `EntityAttributes`
       WHERE `type` = 'entity-category' AND
@@ -501,7 +499,7 @@ class Statistics extends Common
           `publishIn` > 1 AND
           `attribute`= 'https://refeds.org/category/personalized');"
     );
-    $noEcHandler = $this->config->getDb()->prepare(
+    $noEcHandler = $this->config->getDb()->query(
       "SELECT COUNT(`id`) AS `count`
       FROM `Entities`
       WHERE `isSP` = 1 AND
@@ -513,7 +511,7 @@ class Statistics extends Common
           WHERE `type` = 'entity-category'
         );"
     );
-    $ecCountHandler = $this->config->getDb()->prepare(
+    $ecCountHandler = $this->config->getDb()->query(
       "SELECT COUNT(`entityID`) AS nrOfEntyID, `count`
       FROM EntityEntityAttributes
       GROUP BY `count`
@@ -529,35 +527,30 @@ class Statistics extends Common
       self::SAML_EC_COCOV1 => 0,
       self::SAML_EC_ESI => 0
     );
-    $spHandler->execute();
     if ($sps = $spHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfSPs = $sps['count'];
     } else {
       $nrOfSPs = 0;
     }
-    $noEcHandler->execute();
     if ($sps = $noEcHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfSPsWithoutEc = $sps['count'];
     } else {
       $nrOfSPsWithoutEc = 0;
     }
-    $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       $ecTagged[$attribute['attribute']] = $attribute['count'];
     }
-    $bothCoCoHandler->execute();
     if ($attribute = $bothCoCoHandler->fetch(PDO::FETCH_ASSOC)) {
       $ecTagged['bothCoCo'] = $attribute['count'];
     } else {
       $ecTagged['bothCoCo'] = 0;
     }
-    $bothRASandPers->execute();
     if ($attribute = $bothRASandPers->fetch(PDO::FETCH_ASSOC)) {
       $ecTagged['bothRASandPers'] = $attribute['count'];
     } else {
       $ecTagged['bothRASandPers'] = 0;
     }
-    $ecCountHandler->execute();
+    #$ecCountHandler->execute();
     $nrOfEcsPerEntityID = $ecCountHandler->fetchAll(PDO::FETCH_ASSOC);
     printf(
       '        <div class="row">
@@ -678,14 +671,13 @@ class Statistics extends Common
     );
 
     $nrOfIdPs = 0;
-    $idpHandler = $this->config->getDb()->prepare(
+    $idpHandler = $this->config->getDb()->query(
       'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1;'
     );
-    $idpHandler->execute();
     if ($idps = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfIdPs = $idps['count'];
     }
-    $entityAttributesHandler = $this->config->getDb()->prepare(
+    $entityAttributesHandler = $this->config->getDb()->query(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
       FROM `EntityAttributes`, `Entities`
       WHERE `type` = 'entity-category-support'
@@ -695,19 +687,17 @@ class Statistics extends Common
         AND `publishIn` > 1
       GROUP BY `attribute`;"
     );
-    $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       $ecsTested[$ecsTagged[$attribute['attribute']]]['MarkedWithECS'] = $attribute['count'];
     }
 
-    $testResultsHandeler = $this->config->getDb()->prepare(
+    $testResultsHandeler = $this->config->getDb()->query(
       "SELECT COUNT(entityID) AS `count`, `test`, `result`
       FROM `TestResults`
       WHERE `TestResults`.`entityID` IN (SELECT `entityID`
       FROM `Entities` WHERE `isIdP` = 1 AND `publishIn` > 1)
       GROUP BY `test`, `result`;"
     );
-    $testResultsHandeler->execute();
     while ($testResult = $testResultsHandeler->fetch(PDO::FETCH_ASSOC)) {
       switch ($testResult['result']) {
         case 'CoCo OK, Entity Category Support OK':
@@ -1217,21 +1207,20 @@ class Statistics extends Common
         AND `Entities`.`status` = 1;'
     );
     $idps = ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) ? $idpCountRow['idps'] : 0;
-    $idpAssuranceHandler = $this->config->getDb()->prepare(
+    $idpAssuranceHandler = $this->config->getDb()->query(
       'SELECT COUNT(`assuranceLog`.`entityID`) as `count`, `assurance`
       FROM `assuranceLog`, `Entities`
       WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
         AND `Entities`.`status` = 1
       GROUP BY `assurance`;'
     );
-    $idpAssuranceHandler->execute();
     $assuranceCount = array(
       'SWAMID-AL1' => 0, 'SWAMID-AL2' => 0, 'SWAMID-AL3' => 0,
       'RAF-low' => 0, 'RAF-medium' => 0, 'RAF-high' => 0, 'None' => 0);
     while ($idpAssuranceRow = $idpAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       $assuranceCount[$idpAssuranceRow['assurance']] = $idpAssuranceRow['count'];
     }
-    $metaAssuranceHandler = $this->config->getDb()->prepare(
+    $metaAssuranceHandler = $this->config->getDb()->query(
       "SELECT COUNT(`Entities`.`id`) AS `count`, `attribute`
       FROM `Entities`, `EntityAttributes`
       WHERE `Entities`.`id` = `EntityAttributes`.`entity_id`
@@ -1247,7 +1236,6 @@ class Statistics extends Common
       WHERE `status` = 1 AND `isIdP` = 1 AND `publishIn` > 1;"
     )->fetchColumn();
 
-    $metaAssuranceHandler->execute();
     $metaAssuranceCount = array(
       'http://www.swamid.se/policy/assurance/al1' => 0, # NOSONAR Should be http://
       'http://www.swamid.se/policy/assurance/al2' => 0, # NOSONAR Should be http://
@@ -1314,14 +1302,13 @@ class Statistics extends Common
                   <th>RAF-Low</th><th>RAF-Medium</th><th>RAF-High</th><th>Nothing</th>
                 </tr>%s', "\n");
 
-    $assuranceHandler = $this->config->getDb()->prepare(
+    $assuranceHandler = $this->config->getDb()->query(
       'SELECT `assuranceLog`.`entityID`, `assurance`, `logDate`
       FROM `assuranceLog`, `Entities`
       WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
         AND `Entities`.`status` = 1
       ORDER BY `entityID`, `assurance`;'
     );
-    $assuranceHandler->execute();
     $oldIdp = false;
     $assurance = array(
     'SWAMID-AL1' => '', 'SWAMID-AL2' => '', 'SWAMID-AL3' => '',
