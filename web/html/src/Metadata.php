@@ -570,7 +570,7 @@ class Metadata extends Common
       );
       $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService_RequestedAttribute`
         WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService_Service` 
+      $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService_Service`
         WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
       $this->config->getDb()->prepare('DELETE FROM `ContactPerson`
         WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));

@@ -168,7 +168,7 @@ class HTML
       </h3>
       <nav class="my-2 my-md-0 mr-md-3">
         <a class="p-2 text-dark" href="%s">About %s</a>
-        <a class="p-2 text-dark" href="%s">Contact us</a>%s 
+        <a class="p-2 text-dark" href="%s">Contact us</a>%s
       </nav>
       <a href="/admin/%s">%s</a>
     </div>%s',

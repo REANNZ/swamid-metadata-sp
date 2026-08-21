@@ -3003,7 +3003,7 @@ class MetadataEdit extends Common
                   'INSERT INTO `AttributeConsumingService` (`entity_id`, `Service_index`) VALUES (:Id, :Index);'
                 );
                 $serviceElementAddHandler = $this->config->getDb()->prepare(
-                  'INSERT INTO `AttributeConsumingService_Service` 
+                  'INSERT INTO `AttributeConsumingService_Service`
                     (`entity_id`, `Service_index`, `element`, `lang`, `data`)
                   VALUES ( :Id, :Index, :Element, :Lang, :Data );'
                 );
