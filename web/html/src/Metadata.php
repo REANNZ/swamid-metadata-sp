@@ -627,6 +627,7 @@ class Metadata extends Common
         $publishedHandler->execute();
         if ($publishedEntity = $publishedHandler->fetch(PDO::FETCH_ASSOC)) {
           if (
+            # NOSONAR need to be 2 since publishedEntity is created in above
             $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated'] &&
             $pendingXML == $publishedEntity['xml']
           ) {

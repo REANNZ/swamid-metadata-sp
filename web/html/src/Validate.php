@@ -346,8 +346,9 @@ class Validate extends Common
     $entityAttributesHandler->execute();
     if ($subjectIdReq = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       if (
+        # NOSONAR need to be 2 since subjectIdReq is created in above
         $subjectIdReq['attribute'] != 'pairwise-id' &&
-        $subjectIdReq['attribute'] != 'subject-id' # NOSONAR need to be 2 since subjectIdReq is created in above
+        $subjectIdReq['attribute'] != 'subject-id'
       ) {
         $this->error .= self::TEXT_COCOV2_REQ;
         $this->error .= sprintf(

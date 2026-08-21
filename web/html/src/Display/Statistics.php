@@ -550,7 +550,6 @@ class Statistics extends Common
     } else {
       $ecTagged['bothRASandPers'] = 0;
     }
-    #$ecCountHandler->execute();
     $nrOfEcsPerEntityID = $ecCountHandler->fetchAll(PDO::FETCH_ASSOC);
     printf(
       '        <div class="row">
