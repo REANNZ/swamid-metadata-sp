@@ -49,7 +49,7 @@ class Common
   protected const BIND_FRIENDLYNAME = ':FriendlyName';
   protected const BIND_FULLNAME = ':FullName';
   protected const BIND_HEIGHT = ':Height';
-  protected const BIND_ID = ':Id';
+  public const BIND_ID = ':Id';
   protected const BIND_INDEX = ':Index';
   protected const BIND_ISREQUIRED = ':IsRequired';
   protected const BIND_ISSUER = ':Issuer';
