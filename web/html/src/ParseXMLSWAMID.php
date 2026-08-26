@@ -1,12 +1,13 @@
 <?php
+
 namespace metadata;
 
 /**
  * Class to Parse XML for an Entity into Database
  * SWAMID specific code
  */
-class ParseXMLSWAMID extends ParseXML {
-
+class ParseXMLSWAMID extends ParseXML
+{
   /**
    * Parse IDPSSODescriptor
    *
@@ -19,7 +20,8 @@ class ParseXMLSWAMID extends ParseXML {
    *
    * @return void
    */
-  protected function parseIDPSSODescriptor($data) {
+  protected function parseIDPSSODescriptor($data)
+  {
     parent::parseIDPSSODescriptor($data);
 
     if (! $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml2']) {
@@ -29,7 +31,7 @@ class ParseXMLSWAMID extends ParseXML {
     }
   }
 
- /**
+  /**
    * Parse SPSSODescriptor
    *
    * SWAMID version
@@ -42,7 +44,8 @@ class ParseXMLSWAMID extends ParseXML {
    *
    * @return void
    */
-  protected function parseSPSSODescriptor($data) {
+  protected function parseSPSSODescriptor($data)
+  {
     parent::parseSPSSODescriptor($data);
 
     if (! $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml2']) {
@@ -77,16 +80,21 @@ class ParseXMLSWAMID extends ParseXML {
    *
    * @return void
    */
-  protected function checkSAMLEndpoint($data,$type, $saml2, $saml1) {
+  protected function checkSAMLEndpoint($data, $type, $saml2, $saml1)
+  {
     $name = $data->nodeName;
     $binding = $data->getAttribute('Binding');
-    $location =$data->getAttribute('Location');
-    if (substr($location,0,8) <> self::TEXT_HTTPS) {
+    $location = $data->getAttribute('Location');
+    if (substr($location, 0, 8) <> self::TEXT_HTTPS) {
       $this->error .= sprintf(
         "SWAMID Tech %s: All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
-        $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, htmlspecialchars($binding));
+        $type == "IDPSSO" ? '5.1.21' : '6.1.15',
+        $type,
+        $name,
+        htmlspecialchars($binding)
+      );
     }
-    parent::checkSAMLEndpoint($data,$type, $saml2, $saml1);
+    parent::checkSAMLEndpoint($data, $type, $saml2, $saml1);
   }
 
   /**
@@ -98,20 +106,23 @@ class ParseXMLSWAMID extends ParseXML {
    *
    * @return void
    */
-  private function cleanOutAssertionConsumerServiceHTTPRedirect() {
+  private function cleanOutAssertionConsumerServiceHTTPRedirect()
+  {
     $removed = false;
     $child = $this->entityDescriptor->firstChild;
     while ($child) {
       if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR) {
         $subchild = $child->firstChild;
         while ($subchild) {
-          if ($subchild->nodeName == self::SAML_MD_ASSERTIONCONSUMERSERVICE
-            && $subchild->getAttribute('Binding') == self::SAML_BINDING_HTTP_REDIRECT) {
+          if (
+            $subchild->nodeName == self::SAML_MD_ASSERTIONCONSUMERSERVICE
+            && $subchild->getAttribute('Binding') == self::SAML_BINDING_HTTP_REDIRECT
+          ) {
             $index = $subchild->getAttribute('index');
             $remChild = $subchild;
             $child->removeChild($remChild);
             $subchild = false;
-            $child=false;
+            $child = false;
             $removed = true;
           } else {
             $subchild = $subchild->nextSibling;

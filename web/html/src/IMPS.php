@@ -1,16 +1,19 @@
 <?php
+
 namespace metadata;
 
 use PDO;
 
-class IMPS {
+class IMPS
+{
   use CommonTrait;
-  const BIND_ID = ':Id';
-  const BIND_IMPS_ID = 'IMPS_id';
-  const BIND_LANG = ':Lang';
-  const BIND_USER_ID = 'User_id';
 
-  const TEXT_MISSING_POST = "Missing POST variable(s)\n";
+  private const BIND_ID = ':Id';
+  private const BIND_IMPS_ID = 'IMPS_id';
+  private const BIND_LANG = ':Lang';
+  private const BIND_USER_ID = 'User_id';
+
+  private const TEXT_MISSING_POST = "Missing POST variable(s)\n";
 
   private $config;
   private $errors = '';
@@ -20,7 +23,8 @@ class IMPS {
    *
    * @return void
    */
-  public function __construct() {
+  public function __construct()
+  {
     global $config;
     if (isset($config)) {
       $this->config = $config;
@@ -36,7 +40,8 @@ class IMPS {
    *
    * @return void
    */
-  public function editIMPS($id) {
+  public function editIMPS($id)
+  {
     if ($this->errors != '') {
       printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
       <b>Errors:</b><br>
@@ -51,11 +56,13 @@ class IMPS {
       WHERE `notMemberAfter` IS NULL AND
         `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
         `lang` = 'en'
-      ORDER BY `OrganizationDisplayName`;");
+      ORDER BY `OrganizationDisplayName`;"
+    );
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `maximumAL`, `lastUpdated`, `sharedIdp`, `OrganizationInfo_id`
       FROM `IMPS`
-      WHERE `IMPS`.`id` = :Id;');
+      WHERE `IMPS`.`id` = :Id;'
+    );
     $impsHandler->execute(array(self::BIND_ID => $id));
     if ($id == 0 || $imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($id == 0) {
@@ -71,18 +78,24 @@ class IMPS {
       $lastUpdated = isset($_POST['lastUpdated']) ? $_POST['lastUpdated'] : $imps['lastUpdated'];
       $sharedIdp = isset($_POST['sharedIdp']) ? true : $imps['sharedIdp'];
 
-      printf('        <form action="?action=Members&subAction=saveImps&id=%d&tab=imps#imps-%d" method="POST" enctype="multipart/form-data">
+      printf('        <form action="?action=Members&subAction=saveImps&id=%d&tab=imps#imps-%d"
+            method="POST" enctype="multipart/form-data">
           <div class="row">
             <div class="col-2">Organization</div>
             <div class="col">
               <select name="organizationId">%s', $imps['id'], $imps['id'], "\n");
       $organizationsHandler->execute();
       while ($organization = $organizationsHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf('               <option value="%d"%s>%s</option>%s',
-          $organization['id'], $organization['id'] == $imps['OrganizationInfo_id'] ? ' selected' : '',
-          htmlspecialchars($organization['OrganizationDisplayName']), "\n");
+        printf(
+          '               <option value="%d"%s>%s</option>%s',
+          $organization['id'],
+          $organization['id'] == $imps['OrganizationInfo_id'] ? ' selected' : '',
+          htmlspecialchars($organization['OrganizationDisplayName']),
+          "\n"
+        );
       }
-      printf('              </select>
+      printf(
+        '              </select>
             </div>
           </div>
           <div class="row">
@@ -104,8 +117,14 @@ class IMPS {
           <input type="submit" name="formAction" value="Add/Update">
         </form>
         <a href="./?action=Members&tab=imps&id=%d#imps-%d"><button>Back</button></a>%s',
-        htmlspecialchars($name), $maximumAL, htmlspecialchars($lastUpdated),
-        $sharedIdp ? ' checked' : '', $imps['id'], $imps['id'], "\n");
+        htmlspecialchars($name),
+        $maximumAL,
+        htmlspecialchars($lastUpdated),
+        $sharedIdp ? ' checked' : '',
+        $imps['id'],
+        $imps['id'],
+        "\n"
+      );
     } else {
       print '        Can\'t find IMPS';
     }
@@ -120,13 +139,22 @@ class IMPS {
    *
    * @return bool|PDO
    */
-  public function saveIMPS($id) {
-    if (isset($_POST['name']) && isset($_POST['maximumAL']) && isset($_POST['lastUpdated']) && isset($_POST['organizationId'])) {
+  public function saveIMPS($id)
+  {
+    if (
+      isset($_POST['name']) &&
+      isset($_POST['maximumAL']) &&
+      isset($_POST['lastUpdated']) &&
+      isset($_POST['organizationId'])
+    ) {
       $maximumAL = $_POST['maximumAL'];
       $this->errors .= $_POST['name'] == '' ? "Name should not be empty.\n" : '';
       $this->errors .= ($maximumAL < 1 || $maximumAL > 3) ? "AL should be between 1 and 3\n" : '';
-      $this->errors .= checkdate(intval(substr($_POST['lastUpdated'],5,2)), intval(substr($_POST['lastUpdated'],8,2)), intval(substr($_POST['lastUpdated'],0,4)))
-        ? '' : "Invalid BOT date.\n";
+      $this->errors .= checkdate(
+        intval(substr($_POST['lastUpdated'], 5, 2)),
+        intval(substr($_POST['lastUpdated'], 8, 2)),
+        intval(substr($_POST['lastUpdated'], 0, 4))
+      ) ? '' : "Invalid BOT date.\n";
     } else {
       $this->errors .= self::TEXT_MISSING_POST;
     }
@@ -137,7 +165,8 @@ class IMPS {
       $impsHandler = $this->config->getDb()->prepare(
         "INSERT INTO `IMPS`
           (`name`,  `maximumAL`, `lastUpdated`, `sharedIdp`, `OrganizationInfo_id`, `lastValidated`)
-        VALUES (:Name, :MaximunAL, :LastUpdated, :SharedIdP, :OrganizationInfoId, :LastUpdated);");
+        VALUES (:Name, :MaximunAL, :LastUpdated, :SharedIdP, :OrganizationInfoId, :LastUpdated);"
+      );
     } else {
       $impsHandler = $this->config->getDb()->prepare(
         'UPDATE `IMPS`
@@ -145,7 +174,8 @@ class IMPS {
           `lastUpdated` = :LastUpdated,
           `lastValidated` = IF(lastValidated < :LastUpdated, :LastUpdated, lastValidated), `sharedIdp` = :SharedIdP,
           `OrganizationInfo_id` = :OrganizationInfoId
-        WHERE `id` = :Id;');
+        WHERE `id` = :Id;'
+      );
     }
     $updatedArray = array(
       ':Name' => $_POST['name'],
@@ -166,20 +196,25 @@ class IMPS {
    *
    * @return bool
    */
-  public function removeImps($id) {
+  public function removeImps($id)
+  {
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `maximumAL`, `lastUpdated`, `sharedIdp`
       FROM `IMPS`
-      WHERE `IMPS`.`id` = :Id;');
+      WHERE `IMPS`.`id` = :Id;'
+    );
     $impsHandler->execute(array(self::BIND_ID => $id));
     if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
       if (isset($_POST['Remove'])) {
         $impsRemoveHandler = $this->config->getDb()->prepare(
           'DELETE FROM `IMPS`
-          WHERE `IMPS`.`id` = :Id;');
+          WHERE `IMPS`.`id` = :Id;'
+        );
         return $impsRemoveHandler->execute(array(self::BIND_ID => $id));
       } else {
-        printf('        <form action="?action=Members&subAction=removeImps&id=%d&tab=imps#imps-%d" method="POST" enctype="multipart/form-data">
+        printf(
+          '        <form action="?action=Members&subAction=removeImps&id=%d&tab=imps#imps-%d"
+            method="POST" enctype="multipart/form-data">
           <div class="row">
             <div class="col">Are you sure that you want to remove the IMPS below ? </h4></div>
           </div>
@@ -198,7 +233,15 @@ class IMPS {
           <input type="submit" name="Remove" value="Remove">
         </form>
         <a href="./?action=Members&tab=imps&id=%d#imps-%d"><button>Back</button></a>%s',
-        $imps['id'], $imps['id'], htmlspecialchars($imps['name']), $imps['maximumAL'], $imps['lastUpdated'], $imps['id'], $imps['id'], "\n");
+          $imps['id'],
+          $imps['id'],
+          htmlspecialchars($imps['name']),
+          $imps['maximumAL'],
+          $imps['lastUpdated'],
+          $imps['id'],
+          $imps['id'],
+          "\n"
+        );
       }
     } else {
       print '        Can\'t find IMPS';
@@ -215,7 +258,8 @@ class IMPS {
    *
    * @return void
    */
-  public function bindIdP2IMPS($entity_Id, $imps_Id) {
+  public function bindIdP2IMPS($entity_Id, $imps_Id)
+  {
     $impsHandler = $this->config->getDb()->prepare('INSERT INTO `IdpIMPS`
       (`entity_id`, `IMPS_id`) VALUES
       (:Entity_id, :IMPS_id);');
@@ -236,21 +280,25 @@ class IMPS {
    *
    * @return bool|PDO
    */
-  public function validateIMPS($entity_Id, $imps_Id, $userId) {
+  public function validateIMPS($entity_Id, $imps_Id, $userId)
+  {
     $checkHandler = $this->config->getDb()->prepare(
       'SELECT * FROM `IdpIMPS`
       WHERE `entity_id` = :Entity_id AND
-        `IMPS_id` = :IMPS_id;');
+        `IMPS_id` = :IMPS_id;'
+    );
     $checkHandler->execute(array('Entity_id' => $entity_Id, self::BIND_IMPS_ID => $imps_Id));
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `lastValidated`, `lastUpdated` , `email`, `fullName`
       FROM `IMPS`
       LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
-      WHERE `IMPS`.`id` = :IMPS_id;');
+      WHERE `IMPS`.`id` = :IMPS_id;'
+    );
     $idpsHandler = $this->config->getDb()->prepare(
       'SELECT `entity_id`, `entityID` FROM `IdpIMPS`, `Entities`
       WHERE `IMPS_id` = :IMPS_id AND
-        `entity_id` = `Entities`.`id`;');
+        `entity_id` = `Entities`.`id`;'
+    );
     $assuranceHandler = $this->config->getDb()->prepare(
       "SELECT `attribute`
       FROM `EntityAttributes`
@@ -258,7 +306,8 @@ class IMPS {
         `type` = 'assurance-certification' AND
         `attribute` LIKE '%http://www.swamid.se/policy/assurance/al%'
       ORDER BY attribute DESC
-      LIMIT 1");
+      LIMIT 1"
+    );
     $impsHandler->execute(array(self::BIND_IMPS_ID => $imps_Id));
     if ($checkHandler->fetch()) {
       if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -266,7 +315,12 @@ class IMPS {
           printf('    <div class="row alert alert-danger" role="alert">
           <div class="col">
             <div class="row"><b>Error:</b></div>
-            <div class="row"><p><b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.</p></div>
+            <div class="row">
+              <p>
+                <b>Updated IMPS required!</b><br>
+                Current approved IMPS is based on a earlier version of the assurance profile.
+              </p>
+            </div>
           </div>%s    </div>', "\n");
           return false;
         }
@@ -275,15 +329,26 @@ class IMPS {
             $impsConfirmHandler = $this->config->getDb()->prepare(
               'UPDATE `IMPS`
               SET `lastValidated` = NOW(), `user_id` = :User_id
-              WHERE `id` = :IMPS_id;');
+              WHERE `id` = :IMPS_id;'
+            );
             $impsConfirmHandler->execute(array(self::BIND_IMPS_ID => $imps_Id, self::BIND_USER_ID => $userId));
             return true;
           } else {
-            printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Error:</b></div>%s        <div class="row">You must check that you confirm!</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", "\n", "\n");
+            printf(
+              '%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
+        <div class="row"><b>Error:</b></div>
+        <div class="row">You must check that you confirm!</div>%s      </div>%s    </div>',
+              "\n",
+              "\n",
+              "\n",
+              "\n"
+            );
           }
         }
-        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
-        printf ('      <div class="row">
+        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0, 10)
+          ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
+        printf(
+          '      <div class="row">
         <div class="col">
           <h4>Confirmation of Identity Management Practice Statement (IMPS)</h4>
           <ul>
@@ -296,13 +361,17 @@ class IMPS {
           <br>
           The following Identity Providers are bound to this IMPS :
           <ul>%s',
-          htmlspecialchars($imps['name']), substr($imps['lastUpdated'], 0, 10),
-          substr($imps['lastValidated'], 0, 10), $validatedBy, "\n");
+          htmlspecialchars($imps['name']),
+          substr($imps['lastUpdated'], 0, 10),
+          substr($imps['lastValidated'], 0, 10),
+          $validatedBy,
+          "\n"
+        );
         $idpsHandler->execute(array(self::BIND_IMPS_ID => $imps_Id));
         while ($idp = $idpsHandler->fetch(PDO::FETCH_ASSOC)) {
           $assuranceHandler->execute(array('Entity_id' => $entity_Id));
           if ($assurance = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
-            $assuranceLevel = substr($assurance['attribute'],40,1);
+            $assuranceLevel = substr($assurance['attribute'], 40, 1);
           } else {
             $assuranceLevel = 0;
           }
@@ -314,7 +383,8 @@ class IMPS {
             <input type="hidden" name="ImpsId" value="%d">
             <input type="hidden" name="FormVisit" value="true">
             <input type="checkbox" id="impsIsValid" name="impsIsValid">
-            <label for="impsIsValid">On behalf of our Member Organisation, I confirm that our IMPS is accurate and valid, and that the Identity Providers adhere to it.</label><br>
+            <label for="impsIsValid">On behalf of our Member Organisation,
+              I confirm that our IMPS is accurate and valid, and that the Identity Providers adhere to it.</label><br>
             <br>
             <input type="submit" name="action" value="Confirm IMPS">
           </form>
@@ -342,7 +412,8 @@ class IMPS {
    *
    * @return void
    */
-  public function editOrganization($id) {
+  public function editOrganization($id)
+  {
     $showAllOrgs = isset($_GET['showAllOrgs']) ? '&showAllOrgs' : '';
     if ($this->errors != '') {
       printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
@@ -355,12 +426,14 @@ class IMPS {
     $organizationsHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `memberSince`, `notMemberAfter`
       FROM `OrganizationInfo`
-      WHERE `id` = :Id;');
+      WHERE `id` = :Id;'
+    );
     $organizationsDataHandler = $this->config->getDb()->prepare(
       'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
       FROM `OrganizationInfoData`
       WHERE `OrganizationInfo_id` = :Id
-      ORDER BY `lang`;');
+      ORDER BY `lang`;'
+    );
 
     $allLang = array();
     foreach ($this->config->getFederation()['languages'] as $lang) {
@@ -378,25 +451,36 @@ class IMPS {
       $memberSince = isset($_POST['memberSince']) ? $_POST['memberSince'] : $organization['memberSince'];
       $notMemberAfter = isset($_POST['notMemberAfter']) ? $_POST['notMemberAfter'] : $organization['notMemberAfter'];
 
-      printf('        <form action="?action=Members&subAction=saveOrganization&id=%d&tab=organizations%s#org-%d" method="POST" enctype="multipart/form-data">%s',
-        $organization['id'], $showAllOrgs, $organization['id'], "\n");
-      while($organizationData = $organizationsDataHandler->fetch(PDO::FETCH_ASSOC)) {
+      printf(
+        '        <form action="?action=Members&subAction=saveOrganization&id=%d&tab=organizations%s#org-%d"
+          method="POST" enctype="multipart/form-data">%s',
+        $organization['id'],
+        $showAllOrgs,
+        $organization['id'],
+        "\n"
+      );
+      while ($organizationData = $organizationsDataHandler->fetch(PDO::FETCH_ASSOC)) {
         $lang = $organizationData['lang'];
-        $orgName = isset($_POST['OrganizationName'][$lang]) ? $_POST['OrganizationName'][$lang] : $organizationData['OrganizationName'];
-        $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang]) ? $_POST['OrganizationDisplayName'][$lang] : $organizationData['OrganizationDisplayName'];
-        $orgURL = isset($_POST['OrganizationURL'][$lang]) ? $_POST['OrganizationURL'][$lang] : $organizationData['OrganizationURL'];
+        $orgName = isset($_POST['OrganizationName'][$lang])
+          ? $_POST['OrganizationName'][$lang] : $organizationData['OrganizationName'];
+        $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang])
+          ? $_POST['OrganizationDisplayName'][$lang] : $organizationData['OrganizationDisplayName'];
+        $orgURL = isset($_POST['OrganizationURL'][$lang])
+          ? $_POST['OrganizationURL'][$lang] : $organizationData['OrganizationURL'];
         $this->printOrganization($lang, $orgName, $orgDisplayName, $orgURL);
         $usedLang[$lang] = true;
       }
       foreach ($this->config->getFederation()['languages'] as $lang) {
         if (! $usedLang[$lang]) {
           $orgName = isset($_POST['OrganizationName'][$lang]) ? $_POST['OrganizationName'][$lang] : '';
-          $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang]) ? $_POST['OrganizationDisplayName'][$lang] : '';
+          $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang])
+            ? $_POST['OrganizationDisplayName'][$lang] : '';
           $orgURL = isset($_POST['OrganizationURL'][$lang]) ? $_POST['OrganizationURL'][$lang] : '';
           $this->printOrganization($lang, $orgName, $orgDisplayName, $orgURL);
         }
       }
-      printf('          <div class="row">
+      printf(
+        '          <div class="row">
             <div class="col"><h5>Membership</h5></div>
           </div>
           <div class="row">
@@ -405,13 +489,20 @@ class IMPS {
           </div>
           <div class="row">
             <div class="col-2">Membership end date</div>
-            <div class="col"><input type="text" name="notMemberAfter" value="%s" size="10" placeholder="YYYY-MM-DD"></div>
+            <div class="col">
+              <input type="text" name="notMemberAfter" value="%s" size="10" placeholder="YYYY-MM-DD">
+            </div>
           </div>
           <input type="submit" name="formAction" value="Add/Update">
         </form>
         <a href="./?action=Members&tab=organizations&id=%d%s#org-%d"><button>Back</button></a>%s',
-        htmlspecialchars($memberSince), htmlspecialchars($notMemberAfter),
-        $organization['id'], $showAllOrgs, $organization['id'], "\n");
+        htmlspecialchars($memberSince),
+        htmlspecialchars($notMemberAfter),
+        $organization['id'],
+        $showAllOrgs,
+        $organization['id'],
+        "\n"
+      );
     } else {
       print '        Can\'t find Organization';
     }
@@ -426,13 +517,20 @@ class IMPS {
    *
    * @return bool|PDO
    */
-  public function saveOrganization($id) {
+  public function saveOrganization($id)
+  {
     $this->errors = '';
     foreach (array('memberSince', 'notMemberAfter') as $key) {
       if (isset($_POST[$key])) {
-        $this->errors .= ($_POST[$key] == '' ||
-          preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST[$key]) && checkdate(intval(substr($_POST[$key],5,2)), intval(substr($_POST[$key],8,2)), intval(substr($_POST[$key],0,4))))
-          ? '' : "Invalid date. \n";
+        $this->errors .= (
+          $_POST[$key] == '' ||
+          preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST[$key]) &&
+          checkdate(
+            intval(substr($_POST[$key], 5, 2)),
+            intval(substr($_POST[$key], 8, 2)),
+            intval(substr($_POST[$key], 0, 4))
+          )
+        ) ? '' : "Invalid date. \n";
       } else {
         $this->errors = self::TEXT_MISSING_POST;
       }
@@ -441,44 +539,53 @@ class IMPS {
       foreach ($this->config->getFederation()['languages'] as $lang) {
         if (isset($_POST[$key][$lang])) {
           switch ($key) {
-            case 'OrganizationName' :
-              $this->errors .= $_POST[$key][$lang] == '' ? "Missing value for OrganizationName[$lang]. Must not be empty\n": '';
+            case 'OrganizationName':
+              $this->errors .= $_POST[$key][$lang] == ''
+                ? "Missing value for OrganizationName[$lang]. Must not be empty\n" : '';
               break;
-            case 'OrganizationDisplayName' :
-              $this->errors .= $_POST[$key][$lang] == '' ? "Missing value for OrganizationDisplayName[$lang]. Must not be empty\n": '';
+            case 'OrganizationDisplayName':
+              $this->errors .= $_POST[$key][$lang] == ''
+                ? "Missing value for OrganizationDisplayName[$lang]. Must not be empty\n" : '';
               break;
-            case 'OrganizationURL' :
-              $this->errors .= $_POST[$key][$lang] == '' ? "Missing value for OrganizationURL[$lang]. Must not be empty\n": '';
+            case 'OrganizationURL':
+              $this->errors .= $_POST[$key][$lang] == ''
+                ? "Missing value for OrganizationURL[$lang]. Must not be empty\n" : '';
               break;
-            default :
+            default:
           }
         } else {
           $this->errors = self::TEXT_MISSING_POST;
         }
       }
     }
-    if ($this->errors != '') { return false; }
+    if ($this->errors != '') {
+      return false;
+    }
 
     $clearOrganizationsDataHandler = $this->config->getDb()->prepare(
       'DELETE FROM `OrganizationInfoData`
-      WHERE `OrganizationInfo_id` = :Id;');
+      WHERE `OrganizationInfo_id` = :Id;'
+    );
     $addOrganizationsDataHandler = $this->config->getDb()->prepare(
       'INSERT INTO `OrganizationInfoData`
         (`OrganizationInfo_id`, `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
       VAlUES
-        (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
+        (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);'
+    );
     if ($id == 0) {
       $organizationsHandler = $this->config->getDb()->prepare(
         'INSERT INTO `OrganizationInfo`
           (`memberSince`, `notMemberAfter`)
         VAlUES
-          (:memberSince, :notMemberAfter);');
+          (:memberSince, :notMemberAfter);'
+      );
     } else {
       $organizationsHandler = $this->config->getDb()->prepare(
-          'UPDATE `OrganizationInfo`
-          SET `memberSince` = :memberSince,
-            `notMemberAfter` = :notMemberAfter
-          WHERE `id` = :Id;');
+        'UPDATE `OrganizationInfo`
+        SET `memberSince` = :memberSince,
+          `notMemberAfter` = :notMemberAfter
+        WHERE `id` = :Id;'
+      );
     }
     $updatedArray = array(
       'memberSince' => $_POST['memberSince'] == '' ? null : $_POST['memberSince'],
@@ -510,23 +617,27 @@ class IMPS {
    *
    * @return bool
    */
-  public function removeOrganization($id) {
+  public function removeOrganization($id)
+  {
     $organizationsHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `memberSince`, `notMemberAfter`
       FROM `OrganizationInfo`
-      WHERE `id` = :Id;');
+      WHERE `id` = :Id;'
+    );
     $organizationsHandler->execute(array(self::BIND_ID => $id));
     if ($organization = $organizationsHandler->fetch(PDO::FETCH_ASSOC)) {
       if (isset($_POST['Remove'])) {
         $organizationRemoveHandler = $this->config->getDb()->prepare(
           'DELETE FROM `OrganizationInfo`
-          WHERE `id` = :Id;');
+          WHERE `id` = :Id;'
+        );
         return $organizationRemoveHandler->execute(array(self::BIND_ID => $id));
       } else {
         $impsHandler = $this->config->getDb()->prepare(
           'SELECT `IMPS`.`id`, `name`
           FROM `IMPS`
-          WHERE  `OrganizationInfo_id` = :Id;');
+          WHERE  `OrganizationInfo_id` = :Id;'
+        );
         $impsHandler->execute(array(self::BIND_ID => $id));
         if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
           printf('        <div class="row">
@@ -535,8 +646,13 @@ class IMPS {
         <div class="row">
           <div class="col"><ul>%s', "\n");
           do {
-            printf('            <li><a href="?action=Members&tab=imps&id=%d#imps-%d" target="_blank">%s</a></li>%s',
-              $imps['id'], $imps['id'], htmlspecialchars($imps['name']), "\n");
+            printf(
+              '            <li><a href="?action=Members&tab=imps&id=%d#imps-%d" target="_blank">%s</a></li>%s',
+              $imps['id'],
+              $imps['id'],
+              htmlspecialchars($imps['name']),
+              "\n"
+            );
           } while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC));
           printf('          </ul></div>%s        </div>%s', "\n", "\n");
         } else {
@@ -556,23 +672,37 @@ class IMPS {
    *
    * @return void
    */
-  private function showRemoveOrganizationInfo($organization) {
+  private function showRemoveOrganizationInfo($organization)
+  {
     $showAllOrgs = isset($_GET['showAllOrgs']) ? '&showAllOrgs' : '';
     $organizationsDataHandler = $this->config->getDb()->prepare(
       'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
       FROM `OrganizationInfoData`
-      WHERE `OrganizationInfo_id` = :Id;');
+      WHERE `OrganizationInfo_id` = :Id;'
+    );
     $organizationsDataHandler->execute(array(self::BIND_ID => $organization['id']));
-    printf('        <div class="row">
+    printf(
+      '        <div class="row">
           <div class="col">Are you sure that you want to remove the Organization below ? </h4></div>
         </div>
-        <form action="?action=Members&subAction=removeOrganization&id=%d&tab=organizations%s#org-%d" method="POST" enctype="multipart/form-data">%s',
-      $organization['id'], $showAllOrgs, $organization['id'], "\n");
+        <form action="?action=Members&subAction=removeOrganization&id=%d&tab=organizations%s#org-%d"
+          method="POST" enctype="multipart/form-data">%s',
+      $organization['id'],
+      $showAllOrgs,
+      $organization['id'],
+      "\n"
+    );
     while ($organizationData = $organizationsDataHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->printOrganization($organizationData['lang'], $organizationData['OrganizationName'],
-        $organizationData['OrganizationDisplayName'], $organizationData['OrganizationURL'], true);
+      $this->printOrganization(
+        $organizationData['lang'],
+        $organizationData['OrganizationName'],
+        $organizationData['OrganizationDisplayName'],
+        $organizationData['OrganizationURL'],
+        true
+      );
     }
-    printf('          <div class="row">
+    printf(
+      '          <div class="row">
             <div class="col"><h5>Membership</h5></div>
           </div>
           <div class="row">
@@ -586,7 +716,13 @@ class IMPS {
           <input type="submit" name="Remove" value="Remove">
         </form>
         <a href="./?action=Members&tab=organizations&id=%d%s#org-%d"><button>Back</button></a>%s',
-      $organization['memberSince'], $organization['notMemberAfter'], $organization['id'], $showAllOrgs, $organization['id'], "\n");
+      $organization['memberSince'],
+      $organization['notMemberAfter'],
+      $organization['id'],
+      $showAllOrgs,
+      $organization['id'],
+      "\n"
+    );
   }
 
   /**
@@ -602,9 +738,11 @@ class IMPS {
    *
    * @return void
    */
-  private function printOrganization($lang, $orgName, $orgDisplayName, $orgURL, $readOnly = false) {
+  private function printOrganization($lang, $orgName, $orgDisplayName, $orgURL, $readOnly = false)
+  {
     $readOnlyHTML = $readOnly ? ' readonly' : '';
-    printf('          <div class="row">
+    printf(
+      '          <div class="row">
             <div class="col"><h5>%s</h5></div>
           </div>
           <div class="row">
@@ -620,9 +758,17 @@ class IMPS {
             <div class="col"><input type="text" name="OrganizationURL[%s]" value="%s" size="30"%s></div>
           </div>%s',
       isset(self::LANG_CODES[$lang]) ? self::LANG_CODES[$lang] : sprintf('Unkown lang code: %s', $lang),
-      $lang, htmlspecialchars($orgName), $readOnlyHTML,
-      $lang, htmlspecialchars($orgDisplayName), $readOnlyHTML,
-      $lang, htmlspecialchars($orgURL), $readOnlyHTML, "\n");
+      $lang,
+      htmlspecialchars($orgName),
+      $readOnlyHTML,
+      $lang,
+      htmlspecialchars($orgDisplayName),
+      $readOnlyHTML,
+      $lang,
+      htmlspecialchars($orgURL),
+      $readOnlyHTML,
+      "\n"
+    );
   }
 
   /**
@@ -632,21 +778,27 @@ class IMPS {
    *
    * @return void
    */
-  public function createOrganizationFromEntity($entitiesId) {
+  public function createOrganizationFromEntity($entitiesId)
+  {
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `data`
       FROM `Organization` WHERE `entity_id` = :Id AND `lang` = :Lang;');
     $entityHandler = $this->config->getDb()->prepare(
       'UPDATE `Entities`
       SET `OrganizationInfo_id` = :OrgInfoId
-      WHERE `id` = :Id;');
+      WHERE `id` = :Id;'
+    );
     $organizationsInfoHandler = $this->config->getDb()->prepare(
       'INSERT INTO `OrganizationInfo` (`memberSince`, `notMemberAfter`)
-      VALUES (:memberSince, NULL);');
+      VALUES (:memberSince, NULL);'
+    );
     $organizationsInfoDataHandler = $this->config->getDb()->prepare(
       'INSERT INTO `OrganizationInfoData`
         (`OrganizationInfo_id`, `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
-      VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
-    $registrationInstantHandler = $this->config->getDb()->prepare('SELECT `registrationInstant` FROM `Entities` WHERE `id` = :Id;');
+      VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);'
+    );
+    $registrationInstantHandler = $this->config->getDb()->prepare(
+      'SELECT `registrationInstant` FROM `Entities` WHERE `id` = :Id;'
+    );
     $organizationData = array();
 
     $memberSince = null;
@@ -654,7 +806,7 @@ class IMPS {
       $registrationInstantHandler->execute(array(self::BIND_ID => $entitiesId));
       $registrationInstantResult = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC);
       $registrationInstant = $registrationInstantResult['registrationInstant'] ?? null;
-      if ( $registrationInstant ) {
+      if ($registrationInstant) {
         $memberSince = date("Y-m-d", strtotime($registrationInstant));
       }
     }

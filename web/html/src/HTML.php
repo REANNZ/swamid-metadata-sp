@@ -1,10 +1,12 @@
 <?php
+
 namespace metadata;
 
 /**
  * Class to handle printing of Header and Footer of web-pages
  */
-class HTML {
+class HTML
+{
   # Setup
   private string $displayName = '';
   private string $destination = '';
@@ -20,7 +22,8 @@ class HTML {
    *
    * @return void
    */
-  public function __construct() {
+  public function __construct()
+  {
     global $config;
     $this->displayName = '<div class="d-flex sa-button" role="button">
         <div class="sa-button-logo-wrap">
@@ -46,39 +49,37 @@ class HTML {
    *
    * @return void
    */
-  public function showHeaders($title_part = "") { ?>
-<!DOCTYPE html>
+  public function showHeaders($title_part = "")
+  {
+    printf(
+      '<!DOCTYPE html>
 <html lang="en" xml:lang="en">
 <head>
   <meta charset="UTF-8">
-  <title><?=htmlspecialchars($this->getPageTitle($title_part))?></title>
+  <title>%s</title>
   <link href="/fontawesome/css/fontawesome.min.css" rel="stylesheet">
   <link href="/fontawesome/css/solid.min.css" rel="stylesheet">
   <link href="/fontawesome/css/regular.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
     integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
-  <?= $this->config->getFederation()['htmlIcons'] ?>
+  %s
   <meta name="theme-color" content="#ffffff">
   <style>
     /* Space out content a bit */
     body {
       padding-top: 20px;
       padding-bottom: 20px;
-      <?= $this->mode == 'QA' ?
-        'background-color: #F05523;' :
-        ''?><?= $this->mode == 'Lab' ? 'background-color: #8B0000;' : ''?>
+      %s%s
     }
 
-    .container {
-      <?= ($this->mode == 'QA' || $this->mode == 'Lab') ? 'background-color: #FFFFFF;' : ''?>
-    }
+    %s
     .text-truncate {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       display: inline-block;
-      max-width: 100%;
+      max-width: 100%%;
     }
 
     /* color for fontawesome icons */
@@ -117,7 +118,7 @@ class HTML {
     .sa-button-logo-wrap {
       text-align: center;
       width: 50px;
-      height: 100%;
+      height: 100%%;
       border-right: 1px solid var(--white);
       padding: 5px 5px 5px 0;
     }
@@ -128,7 +129,7 @@ class HTML {
     .sa-button-text {
       padding-left: 10px;
       text-align: center;
-      width: 85%;
+      width: 85%%;
       color: var(--white);
     }
     .sa-button-text-primary {
@@ -138,24 +139,56 @@ class HTML {
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
+  <div class="container">%s',
+      htmlspecialchars($this->getPageTitle($title_part)),
+      $this->config->getFederation()['htmlIcons'],
+      $this->mode == 'QA' ? 'background-color: #F05523;' : '',
+      $this->mode == 'Lab' ? 'background-color: #8B0000;' : '',
+      ($this->mode == 'QA' || $this->mode == 'Lab') ? '.container { background-color: #FFFFFF; }' : '',
+      "\n"
+    );
+    $this->showHeaderBar();
+  }
+
+  /**
+   * Print header bar of webpage
+   * Abit and info links
+   *
+   * @return void
+   */
+  protected function showHeaderBar()
+  {
+    printf(
+      '    <div class="d-flex flex-column flex-md-row align-items-center
+        p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
       <h3 class="my-0 mr-md-auto font-weight-normal">
         <a href=".">
-          <img src="<?= $this->federation['logoURL'] ?>" alt="<?= $this->federation['displayName'] ?> Logo" width="<?= $this->federation['logoWidth'] ?>" height="<?= $this->federation['logoHeight'] ?>">
-        </a> Metadata <?= $this->mode == 'Prod' ? '' : $this->mode?>
-
+          <img src="%s" alt="%s Logo" width="%d" height="%d">
+        </a> Metadata %s
       </h3>
       <nav class="my-2 my-md-0 mr-md-3">
-        <a class="p-2 text-dark" href="<?= $this->federation['aboutURL'] ?>">About <?= $this->federation['displayName'] ?></a>
-        <a class="p-2 text-dark" href="<?= $this->federation['contactURL'] ?>">Contact us</a>
-        <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
-        <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/Shibboleth.sso/Logout?return=/">Logout</a>' : ''?>
-
+        <a class="p-2 text-dark" href="%s">About %s</a>
+        <a class="p-2 text-dark" href="%s">Contact us</a>%s
       </nav>
-      <a href="/admin/<?=$this->destination?>"><?=$this->displayName?></a>
-    </div>
-<?php }
+      <a href="/admin/%s">%s</a>
+    </div>%s',
+      $this->federation['logoURL'],
+      $this->federation['displayName'],
+      $this->federation['logoWidth'],
+      $this->federation['logoHeight'],
+      $this->mode == 'Prod' ? '' : $this->mode,
+      $this->federation['aboutURL'],
+      $this->federation['displayName'],
+      $this->federation['contactURL'],
+      $this->loggedIn ? '
+        <a class="p-2 text-dark" href="/admin/?showHelp">Help</a>
+        <a class="p-2 text-dark" href="/Shibboleth.sso/Logout?return=/">Logout</a>' : '',
+      $this->destination,
+      $this->displayName,
+      "\n"
+    );
+  }
+
   /**
    * Print footer of webpage
    *
@@ -163,7 +196,8 @@ class HTML {
    *
    * @return void
    */
-  public function showFooter($collapseIcons = array()) {
+  public function showFooter($collapseIcons = array())
+  {
     print "\n  </div>";
     printf('%s  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
@@ -178,7 +212,7 @@ class HTML {
     integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+"
     crossorigin="anonymous">
   </script>%s', "\n", "\n");
-    if (isset($this->tableToSort[0]) || isset($collapseIcons[0]) || $this->showDownload ) {
+    if (isset($this->tableToSort[0]) || isset($collapseIcons[0]) || $this->showDownload) {
       if (isset($this->tableToSort[0])) {
         # Add JS script to be able to use later
         printf('  <script type="text/javascript" charset="utf8"
@@ -187,7 +221,8 @@ class HTML {
       print "  <script>\n";
       if (isset($collapseIcons[0])) {
         print "    $(function () {";
-        foreach ($collapseIcons as $collapseIcon) { ?>
+        foreach ($collapseIcons as $collapseIcon) {
+          ?>
 
       $('#<?=$collapseIcon?>').on('show.bs.collapse', function (event) {
         var tag_id = document.getElementById('<?=$collapseIcon?>-icon');
@@ -199,20 +234,19 @@ class HTML {
         tag_id.className = "fas fa-chevron-circle-right";
         event.stopPropagation();
       })<?php
-      }
-      print "    })\n";
+        }
+        print "    })\n";
       }
 
       # Add function to sort if needed
       if (isset($this->tableToSort[0])) {
         print "    $(document).ready(function () {\n";
         foreach ($this->tableToSort as $table) {
-          printf ("      $('#%s').DataTable( {paging: false});\n", $table);
+          printf("      $('#%s').DataTable( {paging: false});\n", $table);
         }
         print "    });\n";
-
       }
-    ?>
+      ?>
     // Add the following code if you want the name of the file appear on select
     function extractFilename(path) {
       if (path.substr(0, 12) == "C:\\fakepath\\")
@@ -243,7 +277,8 @@ class HTML {
    *
    * @return void
    */
-  public function setDisplayName($name) {
+  public function setDisplayName($name)
+  {
     $this->displayName = $name;
     $this->loggedIn = true;
   }
@@ -255,7 +290,8 @@ class HTML {
    *
    * @return void
    */
-  public function setDestination($destination) {
+  public function setDestination($destination)
+  {
     $this->destination = $destination;
   }
 
@@ -266,7 +302,8 @@ class HTML {
    *
    * @return void
    */
-  public function addTableSort($tableId) {
+  public function addTableSort($tableId)
+  {
     $this->tableToSort[] = $tableId;
   }
 
@@ -277,7 +314,8 @@ class HTML {
    *
    * @return string
    */
-  private function getPageTitle($title_part) {
+  private function getPageTitle($title_part)
+  {
     return 'Metadata ' . $this->federation['displayName'] . ( $title_part ? ' - ' . $title_part : '');
   }
 
@@ -288,7 +326,8 @@ class HTML {
    *
    * @return string Base URL of $url
    */
-  public function getBaseURL($url) {
+  public function getBaseURL($url)
+  {
     return preg_replace(',^(https?://[^/]+/).*$,', '\1', $url);
   }
 }

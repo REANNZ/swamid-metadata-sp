@@ -1,6 +1,7 @@
 <?php
 
-function usage() {
+function usage()
+{
   global $argv;
   print "Usage:\n";
   printf("    %s [--use-id] organisations-file.json\n", $argv[0]);
@@ -16,7 +17,7 @@ require_once __DIR__ . '/../html/vendor/autoload.php';
 
 $config = new \metadata\Configuration();
 
-if ( $argc <= 1 || ($argv[1] == '--use-id' && $argc <= 2 ) ) {
+if ($argc <= 1 || ($argv[1] == '--use-id' && $argc <= 2 )) {
    usage();
    exit;
 }

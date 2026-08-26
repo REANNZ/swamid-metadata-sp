@@ -10,12 +10,17 @@ require_once __DIR__ . '/../html/vendor/autoload.php';
 
 $config = new \metadata\Configuration();
 
-$updateMailRemindersHandler = $config->getDb()->prepare('INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
-  VALUES (:Id, :Type, :Level, NOW()) ON DUPLICATE KEY UPDATE `level` = :Level, `mailDate` = NOW()');
-$removeMailRemindersHandler = $config->getDb()->prepare('DELETE FROM MailReminders
-  WHERE `entity_id` = :Id AND `type` = :Type');
+$updateMailRemindersHandler = $config->getDb()->prepare(
+  'INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
+  VALUES (:Id, :Type, :Level, NOW()) ON DUPLICATE KEY UPDATE `level` = :Level, `mailDate` = NOW()'
+);
+$removeMailRemindersHandler = $config->getDb()->prepare(
+  'DELETE FROM MailReminders
+  WHERE `entity_id` = :Id AND `type` = :Type'
+);
 $getMailRemindersHandler = $config->getDb()->prepare(
-  'SELECT `entity_id`, `level` FROM MailReminders WHERE `type` = :Type');
+  'SELECT `entity_id`, `level` FROM MailReminders WHERE `type` = :Type'
+);
 
 const REMIND_ANNUAL = 'annualConfirm';
 const REMIND_CERTS = 'certs';
@@ -65,7 +70,8 @@ if (in_array(REMIND_IMPS, $remindOnly)) {
   }
 }
 
-function invalidUsage($msg) {
+function invalidUsage($msg)
+{
   global $argv, $remindAll;
 
   printf("%s\n", $msg);
@@ -74,7 +80,8 @@ function invalidUsage($msg) {
   exit(1);
 }
 
-function confirmEntities() {
+function confirmEntities()
+{
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
   # Time to confirm entities again ?
   $reminders = array();
@@ -95,11 +102,13 @@ function confirmEntities() {
   }
   $flagDates->closeCursor();
 
-  $entitiesHandler = $config->getDb()->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `lastConfirmed`, `data` AS DisplayName
+  $entitiesHandler = $config->getDb()->prepare(
+    "SELECT DISTINCT `Entities`.`id`, `entityID`, `lastConfirmed`, `data` AS DisplayName
     FROM `Entities`
     LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
     LEFT JOIN `Mdui` ON `Mdui`.`entity_id` = `Entities`.`id` AND `element` = 'DisplayName' AND `lang` = 'en'
-    WHERE `status` = 1 AND `publishIn` > 1 ORDER BY `entityID`");
+    WHERE `status` = 1 AND `publishIn` > 1 ORDER BY `entityID`"
+  );
 
   $entitiesHandler->execute();
   while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -110,18 +119,30 @@ function confirmEntities() {
       if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 3) {
         printf('Error %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 3));
-        sendEntityConfirmation($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], 12);
+        sendEntityConfirmation(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          12
+        );
       } elseif ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
         printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 2));
-        sendEntityConfirmation($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], 11);
+        sendEntityConfirmation(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          11
+        );
       } elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
         printf('Warn1 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 1));
-        sendEntityConfirmation($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], 10);
+        sendEntityConfirmation(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          10
+        );
       }
       unset($reminders[$entity['id']]);
     }
@@ -136,7 +157,8 @@ function confirmEntities() {
   $entitiesHandler->closeCursor();
 }
 
-function oldCerts() {
+function oldCerts()
+{
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
   # Time to update certs ?
   $reminders = array();
@@ -188,8 +210,8 @@ function oldCerts() {
         $keyStatus = 0;
         $keyType = $key['type'];
       }
-      switch($key['use']) {
-        case 'encryption' :
+      switch ($key['use']) {
+        case 'encryption':
           if ($key['notValidAfter'] > $warn1Date) {
             $encr = 0;
           } elseif ($key['notValidAfter'] > $nowDate) {
@@ -203,7 +225,7 @@ function oldCerts() {
             $encr = 2;
           }
           break;
-        case 'signing' :
+        case 'signing':
           if ($key['notValidAfter'] > $warn1Date) {
             $sign = 0;
           } elseif ($key['notValidAfter'] > $nowDate) {
@@ -217,7 +239,7 @@ function oldCerts() {
             $sign = 2;
           }
           break;
-        case 'both' :
+        case 'both':
           if ($key['notValidAfter'] > $warn1Date) {
             $sign = 0;
             $encr = 0;
@@ -234,8 +256,8 @@ function oldCerts() {
             $encr = 2;
           }
           break;
-        default :
-          printf ("Unknown key use value %s\n",$key['use']);
+        default:
+          printf("Unknown key use value %s\n", $key['use']);
       }
     }
     if ($keyStatus > 0) {
@@ -247,10 +269,14 @@ function oldCerts() {
         $reminders[$entity['id']] = 0;
       }
       if ($reminders[$entity['id']] < $maxStatus) {
-        printf("\nProblem with %s\n%s",$entity['entityID'],$errorText);
+        printf("\nProblem with %s\n%s", $entity['entityID'], $errorText);
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 2, BIND_LEVEL => $maxStatus));
-        sendCertReminder($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], $maxStatus);
+        sendCertReminder(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          $maxStatus
+        );
       }
       unset($reminders[$entity['id']]);
     }
@@ -264,17 +290,19 @@ function oldCerts() {
   $entitiesHandler->closeCursor();
 }
 
-function parserKeyError($keyStatus, $keyType) {
-  switch($keyStatus) {
-    case 1 :
+function parserKeyError($keyStatus, $keyType)
+{
+  switch ($keyStatus) {
+    case 1:
       return ' -> At least one key for ' . $keyType . "Descriptor will expire within 1 month\n";
-    case 2 :
+    case 2:
       return ' -> At least one key for ' . $keyType . "Descriptor have expired\n";
     default:
   }
 }
 
-function checkOldPending() {
+function checkOldPending()
+{
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
 
   # Warn for pending not handled
@@ -313,18 +341,33 @@ function checkOldPending() {
       if ($warn3Date > $entity['lastValidated'] && $reminders[$entity['id']] < 3) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 3));
-        sendOldUpdates($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], $entity['removeDate'], 11);
+        sendOldUpdates(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          $entity['removeDate'],
+          11
+        );
       } elseif ($warn2Date > $entity['lastValidated'] && $reminders[$entity['id']] < 2) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 2));
-        sendOldUpdates($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], $entity['removeDate'], 4);
+        sendOldUpdates(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          $entity['removeDate'],
+          4
+        );
       } elseif ($warn1Date > $entity['lastValidated'] && $reminders[$entity['id']] < 1) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 1));
-        sendOldUpdates($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], $entity['removeDate'], 1);
+        sendOldUpdates(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          $entity['removeDate'],
+          1
+        );
       }
       unset($reminders[$entity['id']]);
     }
@@ -339,7 +382,8 @@ function checkOldPending() {
   $entitiesHandler->closeCursor();
 }
 
-function checkOldDraft() {
+function checkOldDraft()
+{
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
 
   # Warn for drafts not handled
@@ -376,13 +420,25 @@ function checkOldDraft() {
       if ($warn2Date > $entity['lastValidated'] && $reminders[$entity['id']] < 2) {
         printf('Draft since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 4, BIND_LEVEL => 2));
-        sendOldUpdates($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], $entity['removeDate'], 7, false);
+        sendOldUpdates(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          $entity['removeDate'],
+          7,
+          false
+        );
       } elseif ($warn1Date > $entity['lastValidated'] && $reminders[$entity['id']] < 1) {
         printf('Draft since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 4, BIND_LEVEL => 1));
-        sendOldUpdates($entity['id'], $entity['entityID'],
-          $entity['DisplayName'], $entity['removeDate'], 2, false);
+        sendOldUpdates(
+          $entity['id'],
+          $entity['entityID'],
+          $entity['DisplayName'],
+          $entity['removeDate'],
+          2,
+          false
+        );
       }
       unset($reminders[$entity['id']]);
     }
@@ -397,7 +453,8 @@ function checkOldDraft() {
   $entitiesHandler->closeCursor();
 }
 
-function checkOldIMPS() {
+function checkOldIMPS()
+{
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
 
   # Warn for IMPS:es not validated
@@ -417,9 +474,12 @@ function checkOldIMPS() {
   }
   $getMailRemindersHandler->closeCursor();
 
-  $flagDates = $config->getDb()->query('SELECT NOW() - INTERVAL ' . $config->getIMPS()['warn1'] . ' MONTH AS `warn1Date`,
+  $flagDates = $config->getDb()->query(
+    'SELECT NOW() - INTERVAL ' . $config->getIMPS()['warn1'] . ' MONTH AS `warn1Date`,
     NOW() - INTERVAL ' . $config->getIMPS()['warn2'] . ' MONTH AS `warn2Date`,
-    NOW() - INTERVAL ' . $config->getIMPS()['error'] . ' MONTH AS `errorDate`', PDO::FETCH_ASSOC);
+    NOW() - INTERVAL ' . $config->getIMPS()['error'] . ' MONTH AS `errorDate`',
+    PDO::FETCH_ASSOC
+  );
 
   foreach ($flagDates as $dates) {
     # Need to use foreach to fetch row. $flagDates is a PDOStatement
@@ -468,7 +528,8 @@ function checkOldIMPS() {
   $impsHandler->closeCursor();
 }
 
-function sendEntityConfirmation($id, $entityID, $displayName, $months) {
+function sendEntityConfirmation($id, $entityID, $displayName, $months)
+{
   global $config, $mailContacts;
   $federation = $config->getFederation();
 
@@ -489,13 +550,15 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
 
   //Content
   $mailContacts->isHTML(true);
-  $mailContacts->Body    = sprintf("<html>\n  <body>
+  $mailContacts->Body    = sprintf(
+    "<html>\n  <body>
     <p>Hi.</p>
     <p>The entity \"%s\" (%s) has not been validated/confirmed for %d months.
     The %s requires an annual confirmation that the entity is operational
     and fulfils the Technology Profile.</p>
     <p>If the entity should no longer be used within %s please remove it from the metadata registry.</p>
-    <p>If not annually confirmed the %s team will start the process to remove the entity from the %s metadata registry.</p>
+    <p>If not annually confirmed the %s team will start the process to remove the entity" .
+    " from the %s metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact.</p>
     <p>You can confirm, update or remove your entity at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
@@ -503,14 +566,22 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  htmlspecialchars($displayName), htmlspecialchars($entityID), $months,
-  $federation['rulesName'],
-  $federation['displayName'],
-  $federation['teamName'], $federation['displayName'],
-  $config->baseURL(), $id, $config->baseURL(), $id,
-  $federation['toolName'],
-  $federation['teamName']);
-  $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has not been validated/confirmed for %d months.
+    htmlspecialchars($displayName),
+    htmlspecialchars($entityID),
+    $months,
+    $federation['rulesName'],
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(),
+    $id,
+    $config->baseURL(),
+    $id,
+    $federation['toolName'],
+    $federation['teamName']
+  );
+  $mailContacts->AltBody = sprintf(
+    "Hi.\n\nThe entity \"%s\" (%s) has not been validated/confirmed for %d months.
     The %s requires an annual confirmation that the entity is operational and fulfils
     the Technology Profile.
     \nIf the entity should no longer be used within %s please remove it from the metadata registry.
@@ -520,16 +591,22 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     \nThis is a message from the %s.
     --
     On behalf of %s",
-    $displayName, $entityID, $months,
+    $displayName,
+    $entityID,
+    $months,
     $federation['rulesName'],
     $federation['displayName'],
-    $federation['teamName'], $federation['displayName'],
-    $config->baseURL(), $id,
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(),
+    $id,
     $federation['toolName'],
-    $federation['teamName']);
+    $federation['teamName']
+  );
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
-  $mailContacts->Subject  = 'Warning : ' . $federation['displayName'] . ' metadata for ' . $shortEntityid . ' needs to be validated';
+  $mailContacts->Subject  =
+    'Warning : ' . $federation['displayName'] . ' metadata for ' . $shortEntityid . ' needs to be validated';
 
   try {
     $mailContacts->send();
@@ -538,7 +615,8 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   }
 }
 
-function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
+function sendCertReminder($id, $entityID, $displayName, $maxStatus)
+{
   global $config, $mailContacts;
   $federation = $config->getFederation();
 
@@ -553,12 +631,16 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
 
   $expireStatus = $maxStatus == 1  ? ' is about to expire' : ' is expired';
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
-  $mailContacts->Subject  = sprintf('Warning : Certificate in metadata for %s%s',
-    $shortEntityid , $expireStatus);
+  $mailContacts->Subject  = sprintf(
+    'Warning : Certificate in metadata for %s%s',
+    $shortEntityid,
+    $expireStatus
+  );
 
   //Content
   $mailContacts->isHTML(true);
-  $mailContacts->Body    = sprintf("<html>\n  <body>
+  $mailContacts->Body    = sprintf(
+    "<html>\n  <body>
     <p>Hi.</p>
     <p>The SAML certificate in your metadata registered in %s \"%s\" (%s)%s.</p>
     <p>The %s requires that signing and
@@ -571,13 +653,22 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  $federation['displayName'], htmlspecialchars($displayName), htmlspecialchars($entityID), $expireStatus,
-  $federation['rulesName'],
-  $config->baseURL(), $id, $config->baseURL(), $id,
-  $federation['roloverDocURL'], $federation['roloverDocURL'],
-  $federation['toolName'],
-  $federation['teamName']);
-  $mailContacts->AltBody = sprintf("Hi.\n
+    $federation['displayName'],
+    htmlspecialchars($displayName),
+    htmlspecialchars($entityID),
+    $expireStatus,
+    $federation['rulesName'],
+    $config->baseURL(),
+    $id,
+    $config->baseURL(),
+    $id,
+    $federation['roloverDocURL'],
+    $federation['roloverDocURL'],
+    $federation['toolName'],
+    $federation['teamName']
+  );
+  $mailContacts->AltBody = sprintf(
+    "Hi.\n
     \nThe SAML certificate in your metadata registered in %s \"%s\" (%s)%s.
     \nThe %s requires that signing and encryption certificates MUST NOT be expired.
     \nYou have received this email because you are either the technical and/or administrative contact.
@@ -587,13 +678,17 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
     \nThis is a message from the %s.
     --
     On behalf of %s",
-    $federation['displayName'], $displayName, $entityID, $expireStatus,
+    $federation['displayName'],
+    $displayName,
+    $entityID,
+    $expireStatus,
     $federation['rulesName'],
-    $config->baseURL(), $id,
+    $config->baseURL(),
+    $id,
     $federation['roloverDocURL'],
     $federation['toolName'],
-    $federation['teamName']);
-
+    $federation['teamName']
+  );
   try {
     $mailContacts->send();
   } catch (Exception $e) {
@@ -601,23 +696,25 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
   }
 }
 
-function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pending = true) {
+function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pending = true)
+{
   global $config, $mailContacts;
   $federation = $config->getFederation();
 
   setupMail();
 
   $address = getLastUpdater($id);
-  if ($config->sendOut() && $address ) {
-    printf ("Sending info to %s\n", $address);
+  if ($config->sendOut() && $address) {
+    printf("Sending info to %s\n", $address);
     $mailContacts->addAddress($address);
   } else {
-    printf ("Would have sent to %s\n", $address);
+    printf("Would have sent to %s\n", $address);
   }
 
   //Content
   $mailContacts->isHTML(true);
-  $mailContacts->Body    = sprintf("<html>\n  <body>
+  $mailContacts->Body    = sprintf(
+    "<html>\n  <body>
     <p>Hi.</p>
     <p>The entity \"%s\" (%s) has been in %s for %d week(s).
     If nothing happens your %s will be removed short after %s.</p>
@@ -628,30 +725,50 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  htmlspecialchars($displayName), htmlspecialchars($entityID), $pending ? 'Pending' : 'Drafts', $weeks,
-  $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
-  $pending ? '<p>To get a change published forward this mail to ' . $federation['teamMail'] . '</p>' : '',
-  $pending ? 'request' : 'draft',
-  $config->baseURL(), $id, $config->baseURL(), $id,
-  $federation['toolName'], $federation['teamName']);
-  $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has been in %s for %d week(s).
+    htmlspecialchars($displayName),
+    htmlspecialchars($entityID),
+    $pending ? 'Pending' : 'Drafts',
+    $weeks,
+    $pending ? 'publication request' : 'draft',
+    substr($removeDate, 0, 10),
+    $pending ? '<p>To get a change published forward this mail to ' . $federation['teamMail'] . '</p>' : '',
+    $pending ? 'request' : 'draft',
+    $config->baseURL(),
+    $id,
+    $config->baseURL(),
+    $id,
+    $federation['toolName'],
+    $federation['teamName']
+  );
+  $mailContacts->AltBody = sprintf(
+    "Hi.\n\nThe entity \"%s\" (%s) has been in %s for %d week(s).
     If nothing happens your %s will be removed short after %s.
     \nYou have received this email because you are the last person updating this entity.
     %s\nYou can view or cancel your %s at %sadmin/?showEntity=%d .
     \nThis is a message from the %s.
     --
     On behalf of %s",
-    $displayName, $entityID, $pending ? 'Pending' : 'Drafts', $weeks,
-    $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
+    $displayName,
+    $entityID,
+    $pending ? 'Pending' : 'Drafts',
+    $weeks,
+    $pending ? 'publication request' : 'draft',
+    substr($removeDate, 0, 10),
     $pending ? "\nTo get a change published forward this mail to " . $federation['teamMail'] : '',
     $pending ? 'request' : 'draft',
-    $config->baseURL(), $id,
-    $federation['toolName'], $federation['teamName']);
+    $config->baseURL(),
+    $id,
+    $federation['toolName'],
+    $federation['teamName']
+  );
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
-  $mailContacts->Subject  = sprintf ('Warning : %s %s metadata for %s needs to be acted on',
+  $mailContacts->Subject  = sprintf(
+    'Warning : %s %s metadata for %s needs to be acted on',
     $federation['displayName'],
-    $pending ? 'pending' : 'draft', $shortEntityid );
+    $pending ? 'pending' : 'draft',
+    $shortEntityid
+  );
 
   try {
     $mailContacts->send();
@@ -660,7 +777,8 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
   }
 }
 
-function sendImpsReminder($id, $name, $months) {
+function sendImpsReminder($id, $name, $months)
+{
   global $config, $mailContacts;
   $federation = $config->getFederation();
 
@@ -682,79 +800,102 @@ function sendImpsReminder($id, $name, $months) {
   //Content
   $mailContacts->isHTML(true);
   if ($months == 99) {
-    $mailContacts->Body    = sprintf("<html>\n  <body>
+    $mailContacts->Body    = sprintf(
+      "<html>\n  <body>
     <p>Hi.</p>
     <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
     Current approved IMPS is based on a earlier version of the assurance profile.
     The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
     and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
     to remove the entity related to this IMPS from %s metadata registry.</p>
-    <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    <p>You have received this email because you are either the technical and/or administrative" .
+      " contact of a related IdP.</p>
     <p>You can view information about your IMPS at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
     <p>This is a message from the %s.<br>
     --<br>
     On behalf of %s</p>\n  </body>\n</html>",
-    htmlspecialchars($name),
-    $federation['displayName'],
-    $federation['teamName'],
-    $federation['displayName'],
-    $config->baseURL(), $id, $config->baseURL(), $id,
-    $federation['toolName'],
-    $federation['teamName']);
-    $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
+      htmlspecialchars($name),
+      $federation['displayName'],
+      $federation['teamName'],
+      $federation['displayName'],
+      $config->baseURL(),
+      $id,
+      $config->baseURL(),
+      $id,
+      $federation['toolName'],
+      $federation['teamName']
+    );
+    $mailContacts->AltBody = sprintf(
+      "Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
     Current approved IMPS is based on a earlier version of the assurance profile.
     The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
     and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
     to remove the entity related to this IMPS from %s metadata registry.
-    \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    \nYou have received this email because you are either the technical and/or administrative" .
+      " contact of a related IdP.</p>
     \nYou can view information about your IMPS at %sadmin/?showEntity=%d .
     \nThis is a message from the %s.
     --
     On behalf of %s",
-    $name,
-    $federation['displayName'],
-    $federation['teamName'],
-    $federation['displayName'],
-    $config->baseURL(), $id,
-    $federation['toolName'],
-    $federation['teamName']);
+      $name,
+      $federation['displayName'],
+      $federation['teamName'],
+      $federation['displayName'],
+      $config->baseURL(),
+      $id,
+      $federation['toolName'],
+      $federation['teamName']
+    );
   } else {
-    $mailContacts->Body    = sprintf("<html>\n  <body>
+    $mailContacts->Body    = sprintf(
+      "<html>\n  <body>
     <p>Hi.</p>
     <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
     The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
     and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
     to remove the entity related to this IMPS from %s metadata registry.</p>
-    <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    <p>You have received this email because you are either the technical and/or administrative" .
+      " contact of a related IdP.</p>
     <p>You can validate/confirm your IMPS at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
     <p>This is a message from the %s.<br>
     --<br>
     On behalf of %s</p>\n  </body>\n</html>",
-    htmlspecialchars($name), $months,
-    $federation['displayName'],
-    $federation['teamName'],
-    $federation['displayName'],
-    $config->baseURL(), $id, $config->baseURL(), $id,
-    $federation['toolName'],
-    $federation['teamName']);
-    $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
+      htmlspecialchars($name),
+      $months,
+      $federation['displayName'],
+      $federation['teamName'],
+      $federation['displayName'],
+      $config->baseURL(),
+      $id,
+      $config->baseURL(),
+      $id,
+      $federation['toolName'],
+      $federation['teamName']
+    );
+    $mailContacts->AltBody = sprintf(
+      "Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has" .
+      " not been validated/confirmed for %d months.
     The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
     and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
     to remove the entity related to this IMPS from %s metadata registry.
-    \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    \nYou have received this email because you are either the technical and/or administrative" .
+      " contact of a related IdP.</p>
     \nYou can validate/confirm your IMPS at %sadmin/?showEntity=%d .
     \nThis is a message from the %s.
     --
     On behalf of %s",
-    $name, $months,
-    $federation['displayName'],
-    $federation['teamName'],
-    $federation['displayName'],
-    $config->baseURL(), $id,
-    $federation['toolName'],
-    $federation['teamName']);
+      $name,
+      $months,
+      $federation['displayName'],
+      $federation['teamName'],
+      $federation['displayName'],
+      $config->baseURL(),
+      $id,
+      $federation['toolName'],
+      $federation['teamName']
+    );
   }
   $mailContacts->Subject  = 'Warning : ' . $federation['displayName'] . ' IMPS ' . $name . ' needs to be validated';
 
@@ -765,7 +906,8 @@ function sendImpsReminder($id, $name, $months) {
   }
 }
 
-function getTechnicalAndAdministrativeContacts($id) {
+function getTechnicalAndAdministrativeContacts($id)
+{
   global $config;
   $addresses = array();
 
@@ -777,12 +919,13 @@ function getTechnicalAndAdministrativeContacts($id) {
       AND `emailAddress` <> ''");
   $contactHandler->execute(array('ID' => $id));
   while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
-    $addresses[] = substr($address['emailAddress'],7);
+    $addresses[] = substr($address['emailAddress'], 7);
   }
   return $addresses;
 }
 
-function getLastUpdater($id) {
+function getLastUpdater($id)
+{
   global $config;
 
   $userHandler = $config->getDb()->prepare("SELECT DISTINCT `email`
@@ -797,7 +940,8 @@ function getLastUpdater($id) {
   return false;
 }
 
-function getAdmins($id) {
+function getAdmins($id)
+{
   global $config;
   $addresses = array();
 
@@ -813,7 +957,8 @@ function getAdmins($id) {
   return $addresses;
 }
 
-function setupMail() {
+function setupMail()
+{
   global $config, $mailContacts;
 
   $mailContacts = $config->getMailer();

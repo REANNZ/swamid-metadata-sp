@@ -1,4 +1,5 @@
 <?php
+
 $db = array(
   'name'        => 'metadata',      # Name of Database
   'servername'  => 'mariadb',       # Name of DB server
@@ -96,37 +97,50 @@ $federation = array(
   'rulesSectsIdP' => '4.1.1 and 4.1.2',
   'rulesSectsSP' => '4.2.1 and 4.2.2',
   'rulesInfoBoth' => '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the
+            organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles
+            to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
           <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
             <li>a service owned by a Member Organisation;</li>
             <li>a service under contract with at least one Member Organisation;</li>
             <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
+            <li>a service that is operated at least in part for the purpose of supporting research and scholarship
+              interaction, collaboration or management; or</li>
+            <li>a service granted special approval by SWAMID Board of Trustees after
+              recommendation by SWAMID Operations.</li>
           </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the
+      <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.
+          </li>
         </ul>',
   'rulesInfoIdP' => '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the
+            organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles
+            to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
         </ul>',
   'rulesInfoSP' => '<ul>
           <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
             <li>a service owned by a Member Organisation;</li>
             <li>a service under contract with at least one Member Organisation;</li>
             <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
+            <li>a service that is operated at least in part for the purpose of supporting research and scholarship
+              interaction, collaboration or management; or</li>
+            <li>a service granted special approval by SWAMID Board of Trustees after
+              recommendation by SWAMID Operations.</li>
           </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the
+      <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.
+          </li>
         </ul>',
 
   'swamid_assurance' => true,
   # If we should check/force a organization connected to each entity
   'checkOrganization' => false,
   # If "Create new organization based on this entity" should set memberSince based on registrationInstant.
-  # NOTE: if using this option, set date.timezone in your php.ini to interpret registrationInstant in the correct timezone.
+  # NOTE: if using this option,
+  # set date.timezone in your php.ini to interpret registrationInstant in the correct timezone.
   'populateMemberSince' => true,
   # Should we clean up saml:Attribute elements from IDPSSODescriptors
   'cleanAttribuesFromIDPSSODescriptor' => true,
@@ -149,7 +163,7 @@ $federation = array(
   # Permit plain HTTP URLs in URL validation
   'urlCheckPlainHTTPEnabled' => false,
   # Maximum response size in URL check (default: 16MB)
-  'urlCheckMaxSize' => 16*1024*1024, // 16MB
+  'urlCheckMaxSize' => 16 * 1024 * 1024, // 16MB
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',

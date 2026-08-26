@@ -1,4 +1,5 @@
 <?php
+
 # Check and validates 100 URLs
 
 //Load composer's autoloader

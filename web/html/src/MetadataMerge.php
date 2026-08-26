@@ -1,9 +1,11 @@
 <?php
+
 namespace metadata;
 
 use PDO;
 
-class MetadataMerge extends Common {
+class MetadataMerge extends Common
+{
   # Setup
   private int $dbOldIdNr = 0;
   private bool $oldExists = false;
@@ -18,7 +20,8 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  public function __construct($id, $oldID = 0) {
+  public function __construct($id, $oldID = 0)
+  {
     parent::__construct($id);
     $this->dbOldIdNr = is_numeric($oldID) ? $oldID : 0;
 
@@ -36,8 +39,9 @@ class MetadataMerge extends Common {
   /**
    * Merge infro from Old -> New
    */
-  public function mergeFrom() {
-    if ( !$this->oldExists) {
+  public function mergeFrom()
+  {
+    if (!$this->oldExists) {
       return;
     }
     $this->getEntityDescriptor($this->xml);
@@ -63,16 +67,18 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  public function mergeRegistrationInfo() {
+  public function mergeRegistrationInfo()
+  {
     $federation = $this->config->getFederation();
 
     # Skip if not same entityID. Only migrate if same!!!!
-    if ( !$this->oldExists || $this->entityID !== $this->oldentityID ) {
+    if (!$this->oldExists || $this->entityID !== $this->oldentityID) {
       return;
     }
 
     $registrationInstantHandler = $this->config->getDb()->prepare(
-      'SELECT `registrationInstant` AS ts FROM `Entities` WHERE `id` = :Id;');
+      'SELECT `registrationInstant` AS ts FROM `Entities` WHERE `id` = :Id;'
+    );
     $registrationInstantHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $registrationInstantHandler->execute();
     if ($instant = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -89,7 +95,11 @@ class MetadataMerge extends Common {
       }
       if (! $registrationInfo) {
         # Add if missing
-        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
+        $this->entityDescriptor->setAttributeNS(
+          self::SAMLXMLNS_URI,
+          'xmlns:mdrpi',
+          'urn:oasis:names:tc:SAML:metadata:rpi'
+        );
         $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
         $registrationInfo->setAttribute('registrationAuthority', $federation['metadata_registration_authority']);
         $registrationInfo->setAttribute('registrationInstant', $instant['ts']);
@@ -100,14 +110,20 @@ class MetadataMerge extends Common {
       $child = $registrationInfo->firstChild;
       $registrationPolicy = false;
       while ($child && ! $registrationPolicy) {
-        if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONPOLICY && $child->getAttribute(self::SAMLXML_LANG) == 'en') {
+        if (
+          $child->nodeName == self::SAML_MDRPI_REGISTRATIONPOLICY &&
+          $child->getAttribute(self::SAMLXML_LANG) == 'en'
+        ) {
           $registrationPolicy = $child;
         } else {
           $child = $child->nextSibling;
         }
       }
       if (!$registrationPolicy) {
-        $registrationPolicy = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONPOLICY, $federation['metadata_registration_policy']);
+        $registrationPolicy = $this->xml->createElement(
+          self::SAML_MDRPI_REGISTRATIONPOLICY,
+          $federation['metadata_registration_policy']
+        );
         $registrationPolicy->setAttribute(self::SAMLXML_LANG, 'en');
         $registrationInfo->appendChild($registrationPolicy);
       }
@@ -119,45 +135,47 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeEntityAttributes() {
-    if ( !$this->oldExists) {
+  private function mergeEntityAttributes()
+  {
+    if (!$this->oldExists) {
       return;
     }
     $entityAttributesHandler = $this->config->getDb()->prepare(
-      'SELECT `type`, `attribute` FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
+      'SELECT `type`, `attribute` FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;'
+    );
     $entityAttributesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       switch ($attribute['type']) {
-        case 'assurance-certification' :
+        case 'assurance-certification':
           $attributeType = 'urn:oasis:names:tc:SAML:attribute:assurance-certification';
           break;
-        case 'entity-category' :
+        case 'entity-category':
           $attributeType = 'http://macedir.org/entity-category'; # NOSONAR Should be http://
           break;
-        case 'entity-category-support' :
+        case 'entity-category-support':
           $attributeType = 'http://macedir.org/entity-category-support'; # NOSONAR Should be http://
           break;
-        case 'subject-id:req' :
+        case 'subject-id:req':
           $attributeType = 'urn:oasis:names:tc:SAML:profiles:subject-id:req';
           break;
-        case 'entity-selection-profile' :
+        case 'entity-selection-profile':
           $attributeType = 'https://refeds.org/entity-selection-profile';
           if (isset($this->config->entitySelectionProfiles()[$attribute['attribute']])) {
             # Update with new value
             $attribute['attribute'] = $this->config->entitySelectionProfiles()[$attribute['attribute']]["base64"];
           }
           break;
-        default :
-          printf ('Merge EntityAttributes : unknown type %s', $attribute['type']);
+        default:
+          printf('Merge EntityAttributes : unknown type %s', $attribute['type']);
           exit;
       }
-      if (! isset($oldAttributeValues[$attributeType]) ) {
+      if (! isset($oldAttributeValues[$attributeType])) {
         $oldAttributeValues[$attributeType] = array();
       }
       $oldAttributeValues[$attributeType][$attribute['attribute']] = $attribute['attribute'];
     }
-    if(isset($oldAttributeValues)) {
+    if (isset($oldAttributeValues)) {
       $extensions = $this->getExtensions();
 
       # Find mdattr:EntityAttributes in XML
@@ -172,7 +190,11 @@ class MetadataMerge extends Common {
       }
       if (! $entityAttributes) {
         # Add if missing
-        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
+        $this->entityDescriptor->setAttributeNS(
+          self::SAMLXMLNS_URI,
+          'xmlns:mdattr',
+          'urn:oasis:names:tc:SAML:metadata:attribute'
+        );
         $entityAttributes = $this->xml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
         $extensions->appendChild($entityAttributes);
       }
@@ -182,7 +204,7 @@ class MetadataMerge extends Common {
       while ($attribute) {
         $attributeValue = $attribute->firstChild;
         $type = $attribute->getAttribute('Name');
-        while($attributeValue) {
+        while ($attributeValue) {
           $value = $attributeValue->textContent;
           if (isset($oldAttributeValues[$type][$value])) {
             unset($oldAttributeValues[$type][$value]);
@@ -201,7 +223,11 @@ class MetadataMerge extends Common {
       }
       foreach ($oldAttributeValues as $type => $values) {
         if (! empty($values)) {
-          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:samla', 'urn:oasis:names:tc:SAML:2.0:assertion');
+          $this->entityDescriptor->setAttributeNS(
+            self::SAMLXMLNS_URI,
+            'xmlns:samla',
+            'urn:oasis:names:tc:SAML:2.0:assertion'
+          );
           $attribute = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTE);
           $attribute->setAttribute('Name', $type);
           $attribute->setAttribute('NameFormat', self::SAMLNF_URI);
@@ -221,12 +247,14 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeIdpErrorURL () {
-    if ( !$this->oldExists) {
+  private function mergeIdpErrorURL()
+  {
+    if (!$this->oldExists) {
       return;
     }
     $errorURLHandler = $this->config->getDb()->prepare(
-      "SELECT DISTINCT URL FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
+      "SELECT DISTINCT URL FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';"
+    );
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $errorURLHandler->execute();
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -236,7 +264,8 @@ class MetadataMerge extends Common {
         $errorURLUpdateHandler = $this->config->getDb()->prepare(
           "INSERT INTO `EntityURLs` (`entity_id`, `URL`, `type` )
           VALUES (:Id, :URL, 'error')
-          ON DUPLICATE KEY UPDATE `URL`= :URL;");
+          ON DUPLICATE KEY UPDATE `URL`= :URL;"
+        );
         $errorURLUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         $errorURLUpdateHandler->bindParam(self::BIND_URL, $errorURL['URL']);
         $errorURLUpdateHandler->execute();
@@ -249,14 +278,17 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeIdPScopes() {
-    if ( !$this->oldExists) {
+  private function mergeIdPScopes()
+  {
+    if (!$this->oldExists) {
       return;
     }
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id;');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $scopesHandler->execute();
-    $scopesInsertHandler = $this->config->getDb()->prepare('INSERT INTO `Scopes` (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
+    $scopesInsertHandler = $this->config->getDb()->prepare(
+      'INSERT INTO `Scopes` (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);'
+    );
     $scopesInsertHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       $oldScopes[$scope['scope']] = $scope['regexp'];
@@ -268,17 +300,17 @@ class MetadataMerge extends Common {
       $shibmdFound = false;
       while ($child) {
         switch ($child->nodeName) {
-          case self::SAML_SHIBMD_SCOPE :
+          case self::SAML_SHIBMD_SCOPE:
             $shibmdFound = true;
-            if (isset ($oldScopes[$child->textContent])) {
-              unset ($oldScopes[$child->textContent]);
+            if (isset($oldScopes[$child->textContent])) {
+              unset($oldScopes[$child->textContent]);
             }
             break;
-          case self::SAML_MDUI_UIINFO :
-          case self::SAML_MDUI_DISCOHINTS :
+          case self::SAML_MDUI_UIINFO:
+          case self::SAML_MDUI_DISCOHINTS:
             $beforeChild = $beforeChild ? $beforeChild : $child;
             break;
-          default :
+          default:
         }
         $child = $child->nextSibling;
       }
@@ -296,7 +328,11 @@ class MetadataMerge extends Common {
       }
 
       if (! $shibmdFound) {
-        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
+        $this->entityDescriptor->setAttributeNS(
+          self::SAMLXMLNS_URI,
+          'xmlns:shibmd',
+          'urn:mace:shibboleth:metadata:1.0'
+        );
       }
     }
   }
@@ -308,25 +344,32 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeUIInfo($type) {
-    if ( !$this->oldExists) {
+  private function mergeUIInfo($type)
+  {
+    if (!$this->oldExists) {
       return;
     }
-    $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND type = :Type ORDER BY `element`, `lang`;');
+    $mduiHandler = $this->config->getDb()->prepare(
+      'SELECT `element`, `lang`, `height`, `width`, `data`
+      FROM `Mdui`
+      WHERE `entity_id` = :Id AND type = :Type
+      ORDER BY `element`, `lang`;'
+    );
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-      $mdelement = self::SAML_MDUI.$mdui['element'];
-      $size = $mdui['height'].'x'.$mdui['width'];
+      $mdelement = self::SAML_MDUI . $mdui['element'];
+      $size = $mdui['height'] . 'x' . $mdui['width'];
       $lang = $mdui['lang'];
-      if (! isset($oldMDUIElements[$mdelement]) ) {
+      if (! isset($oldMDUIElements[$mdelement])) {
         $oldMDUIElements[$mdelement] = array();
       }
-      if (! isset($oldMDUIElements[$mdelement][$lang]) ) {
+      if (! isset($oldMDUIElements[$mdelement][$lang])) {
         $oldMDUIElements[$mdelement][$lang] = array();
       }
-      $oldMDUIElements[$mdelement][$lang][$size] = array('value' => $mdui['data'], 'height' => $mdui['height'], 'width' => $mdui['width']);
+      $oldMDUIElements[$mdelement][$lang][$size] =
+        array('value' => $mdui['data'], 'height' => $mdui['height'], 'width' => $mdui['width']);
     }
     if (isset($oldMDUIElements) && $ssoDescriptor = $this->getSSODecriptor($type)) {
       $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
@@ -336,19 +379,19 @@ class MetadataMerge extends Common {
       $mduiFound = false;
       while ($child && ! $uuInfo) {
         switch ($child->nodeName) {
-          case self::SAML_MDUI_UIINFO :
+          case self::SAML_MDUI_UIINFO:
             $mduiFound = true;
             $uuInfo = $child;
             break;
-          case self::SAML_MDUI_DISCOHINTS :
+          case self::SAML_MDUI_DISCOHINTS:
             $beforeChild = $beforeChild ? $beforeChild : $child;
             $mduiFound = true;
             break;
-          default :
+          default:
         }
         $child = $child->nextSibling;
       }
-      if (! $uuInfo ) {
+      if (! $uuInfo) {
         $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
         if ($beforeChild) {
           $extensions->insertBefore($uuInfo, $beforeChild);
@@ -368,7 +411,7 @@ class MetadataMerge extends Common {
           $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
           $element = $child->nodeName;
           if (isset($oldMDUIElements[$element][$lang])) {
-            $size = $height.'x'.$width;
+            $size = $height . 'x' . $width;
             if (isset($oldMDUIElements[$element][$lang][$size])) {
               unset($oldMDUIElements[$element][$lang][$size]);
             }
@@ -376,7 +419,10 @@ class MetadataMerge extends Common {
         }
         $child = $child->nextSibling;
       }
-      $mduiAddHandler = $this->config->getDb()->prepare('INSERT INTO `Mdui` (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
+      $mduiAddHandler = $this->config->getDb()->prepare(
+        'INSERT INTO `Mdui` (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
+        VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);'
+      );
       $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $mduiAddHandler->bindParam(self::BIND_TYPE, $type);
       foreach ($oldMDUIElements as $element => $data) {
@@ -409,17 +455,20 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeDiscoHints() {
-    if ( !$this->oldExists) {
+  private function mergeDiscoHints()
+  {
+    if (!$this->oldExists) {
       return;
     }
-    $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
+    $mduiHandler = $this->config->getDb()->prepare(
+      "SELECT `element`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;"
+    );
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-      $mdelement = self::SAML_MDUI.$mdui['element'];
+      $mdelement = self::SAML_MDUI . $mdui['element'];
       $value = $mdui['data'];
-      if (! isset($oldMDUIElements[$mdelement]) ) {
+      if (! isset($oldMDUIElements[$mdelement])) {
         $oldMDUIElements[$mdelement] = array();
       }
       $oldMDUIElements[$mdelement][$value] = true;
@@ -433,17 +482,17 @@ class MetadataMerge extends Common {
         $mduiFound = false;
         while ($child && ! $discoHints) {
           switch ($child->nodeName) {
-            case self::SAML_MDUI_UIINFO :
+            case self::SAML_MDUI_UIINFO:
               $mduiFound = true;
               break;
-            case self::SAML_MDUI_DISCOHINTS :
+            case self::SAML_MDUI_DISCOHINTS:
               $discoHints = $child;
               $mduiFound = true;
               break;
           }
           $child = $child->nextSibling;
         }
-        if (! $discoHints ) {
+        if (! $discoHints) {
           $discoHints = $this->xml->createElement(self::SAML_MDUI_DISCOHINTS);
           $extensions->appendChild($discoHints);
         }
@@ -460,7 +509,9 @@ class MetadataMerge extends Common {
           }
           $child = $child->nextSibling;
         }
-        $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO `Mdui` (`entity_id`, `type`, `element`, `data`) VALUES (:Id, 'IDPDisco', :Element, :Data);");
+        $mduiAddHandler = $this->config->getDb()->prepare(
+          "INSERT INTO `Mdui` (`entity_id`, `type`, `element`, `data`) VALUES (:Id, 'IDPDisco', :Element, :Data);"
+        );
         $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         foreach ($oldMDUIElements as $element => $valueArray) {
           foreach ($valueArray as $value => $true) {
@@ -481,18 +532,29 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeAttributeConsumingService() {
-    if ( !$this->oldExists) {
+  private function mergeAttributeConsumingService()
+  {
+    if (!$this->oldExists) {
       return;
     }
-    $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index` FROM `AttributeConsumingService` WHERE `entity_id` = :Id ORDER BY `Service_index`;');
+    $serviceIndexHandler = $this->config->getDb()->prepare(
+      'SELECT `Service_index` FROM `AttributeConsumingService` WHERE `entity_id` = :Id ORDER BY `Service_index`;'
+    );
     $serviceIndexHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
 
-    $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data` FROM `AttributeConsumingService_Service` WHERE `entity_id` = :Id AND `Service_index` = :Index ORDER BY `element` DESC, `lang`;');
+    $serviceElementHandler = $this->config->getDb()->prepare(
+      'SELECT `element`, `lang`, `data`
+      FROM `AttributeConsumingService_Service`
+      WHERE `entity_id` = :Id AND `Service_index` = :Index ORDER BY `element` DESC, `lang`;'
+    );
     $serviceElementHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $serviceElementHandler->bindParam(self::BIND_INDEX, $index);
 
-    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired` FROM `AttributeConsumingService_RequestedAttribute` WHERE `entity_id` = :Id AND `Service_index` = :Index ORDER BY `isRequired` DESC, `FriendlyName`;');
+    $requestedAttributeHandler = $this->config->getDb()->prepare(
+      'SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired`
+      FROM `AttributeConsumingService_RequestedAttribute`
+      WHERE `entity_id` = :Id AND `Service_index` = :Index ORDER BY `isRequired` DESC, `FriendlyName`;'
+    );
     $requestedAttributeHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $requestedAttributeHandler->bindParam(self::BIND_INDEX, $index);
 
@@ -509,24 +571,37 @@ class MetadataMerge extends Common {
       }
       $requestedAttributeHandler->execute();
       while ($requestedAttribute = $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
-        $oldRequestedAttributes[$index][$requestedAttribute['Name']] = array('isRequired' => $requestedAttribute['isRequired'], 'friendlyName' => $requestedAttribute['FriendlyName'], 'nameFormat' => $requestedAttribute['NameFormat']);
+        $oldRequestedAttributes[$index][$requestedAttribute['Name']] = array(
+          'isRequired' => $requestedAttribute['isRequired'],
+          'friendlyName' => $requestedAttribute['FriendlyName'],
+          'nameFormat' => $requestedAttribute['NameFormat']
+        );
       }
     }
 
     $this->getEntityDescriptor($this->xml);
     $ssoDescriptor = $this->getSSODecriptor('SPSSO');
     if ($ssoDescriptor && isset($oldServiceIndexes)) {
-      $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService` (`entity_id`, `Service_index`) VALUES (:Id, :Index);');
+      $addServiceIndexHandler = $this->config->getDb()->prepare(
+        'INSERT INTO `AttributeConsumingService` (`entity_id`, `Service_index`) VALUES (:Id, :Index);'
+      );
       $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $addServiceIndexHandler->bindParam(self::BIND_INDEX, $index);
 
-      $serviceElementAddHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService_Service` (`entity_id`, `Service_index`, `element`, `lang`, `data`) VALUES ( :Id, :Index, :Element, :Lang, :Data );');
+      $serviceElementAddHandler = $this->config->getDb()->prepare(
+        'INSERT INTO `AttributeConsumingService_Service` (`entity_id`, `Service_index`, `element`, `lang`, `data`)
+        VALUES ( :Id, :Index, :Element, :Lang, :Data );'
+      );
       $serviceElementAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $serviceElementAddHandler->bindParam(self::BIND_INDEX, $index);
       $serviceElementAddHandler->bindParam(self::BIND_LANG, $lang);
       $serviceElementAddHandler->bindParam(self::BIND_DATA, $value);
 
-      $requestedAttributeAddHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService_RequestedAttribute` (`entity_id`, `Service_index`, `FriendlyName`, `Name`, `NameFormat`, `isRequired`) VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
+      $requestedAttributeAddHandler = $this->config->getDb()->prepare(
+        'INSERT INTO `AttributeConsumingService_RequestedAttribute`
+          (`entity_id`, `Service_index`, `FriendlyName`, `Name`, `NameFormat`, `isRequired`)
+        VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);'
+      );
       $requestedAttributeAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $requestedAttributeAddHandler->bindParam(self::BIND_INDEX, $index);
       $requestedAttributeAddHandler->bindParam(self::BIND_FRIENDLYNAME, $friendlyName);
@@ -536,7 +611,7 @@ class MetadataMerge extends Common {
 
       $child = $ssoDescriptor->firstChild;
       while ($child) {
-        if ($child->nodeName == self::SAML_MD_ATTRIBUTECONSUMINGSERVICE ) {
+        if ($child->nodeName == self::SAML_MD_ATTRIBUTECONSUMINGSERVICE) {
           $index = $child->getAttribute('index');
 
           $attributeConsumingService = $child;
@@ -544,71 +619,83 @@ class MetadataMerge extends Common {
           $nextOrder = 1;
           while ($servicechild) {
             switch ($servicechild->nodeName) {
-              case self::SAML_MD_SERVICENAME :
+              case self::SAML_MD_SERVICENAME:
                 $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
                 if (isset($oldServiceElements[$index]['ServiceName'][$lang])) {
-                  unset ($oldServiceElements[$index]['ServiceName'][$lang]);
+                  unset($oldServiceElements[$index]['ServiceName'][$lang]);
                 }
                 break;
-              case self::SAML_MD_SERVICEDESCRIPTION :
+              case self::SAML_MD_SERVICEDESCRIPTION:
                 if ($nextOrder < 2) {
                   $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, self::SAML_MD_SERVICENAME);
                   foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-                    $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
+                    $attributeConsumingServiceElement = $this->xml->createElement(
+                      self::SAML_MD_SERVICENAME,
+                      htmlspecialchars($value)
+                    );
                     $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                     $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                     $serviceElementAddHandler->execute();
-                    unset ($oldServiceElements[$index]['ServiceName'][$lang]);
+                    unset($oldServiceElements[$index]['ServiceName'][$lang]);
                   }
                   unset($oldServiceElements[$index]['ServiceName']);
                   $nextOrder = 2;
                 }
                 $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
                 if (isset($oldServiceElements[$index]['ServiceDescription'][$lang])) {
-                  unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
+                  unset($oldServiceElements[$index]['ServiceDescription'][$lang]);
                 }
                 break;
-              case self::SAML_MD_REQUESTEDATTRIBUTE :
+              case self::SAML_MD_REQUESTEDATTRIBUTE:
                 if ($nextOrder < 3) {
-                  if(isset($oldServiceElements[$index]['ServiceName'])) {
+                  if (isset($oldServiceElements[$index]['ServiceName'])) {
                     $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
                     foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-                      $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
+                      $attributeConsumingServiceElement = $this->xml->createElement(
+                        self::SAML_MD_SERVICENAME,
+                        htmlspecialchars($value)
+                      );
                       $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                       $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                       $serviceElementAddHandler->execute();
-                      unset ($oldServiceElements[$index]['ServiceName'][$lang]);
+                      unset($oldServiceElements[$index]['ServiceName'][$lang]);
                     }
                     unset($oldServiceElements[$index]['ServiceName']);
                   }
                   if (isset($oldServiceElements[$index]['ServiceDescription'])) {
                     $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
                     foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-                      $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, htmlspecialchars($value));
+                      $attributeConsumingServiceElement = $this->xml->createElement(
+                        self::SAML_MD_SERVICEDESCRIPTION,
+                        htmlspecialchars($value)
+                      );
                       $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                       $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                       $serviceElementAddHandler->execute();
-                      unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
+                      unset($oldServiceElements[$index]['ServiceDescription'][$lang]);
                     }
-                    unset ($oldServiceElements[$index]['ServiceDescription']);
+                    unset($oldServiceElements[$index]['ServiceDescription']);
                   }
                   $nextOrder = 3;
                 }
                 $name = $servicechild->getAttribute('Name');
                 if (isset($oldRequestedAttributes[$index][$name])) {
-                  unset ($oldRequestedAttributes[$index][$name]);
+                  unset($oldRequestedAttributes[$index][$name]);
                 }
                 break;
-              default :
+              default:
                 printf('%s<br>', $servicechild->nodeName);
             }
             $servicechild = $servicechild->nextSibling;
           }
           # Add what is left of this index at the end of this Service
-          if(isset($oldServiceElements[$index]['ServiceName'])) {
+          if (isset($oldServiceElements[$index]['ServiceName'])) {
             $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
             foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-              $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
+              $attributeConsumingServiceElement = $this->xml->createElement(
+                self::SAML_MD_SERVICENAME,
+                htmlspecialchars($value)
+              );
               $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
               $attributeConsumingService->appendChild($attributeConsumingServiceElement);
               $serviceElementAddHandler->execute();
@@ -617,7 +704,10 @@ class MetadataMerge extends Common {
           if (isset($oldServiceElements[$index]['ServiceDescription'])) {
             $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
             foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-              $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, htmlspecialchars($value));
+              $attributeConsumingServiceElement = $this->xml->createElement(
+                self::SAML_MD_SERVICEDESCRIPTION,
+                htmlspecialchars($value)
+              );
               $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
               $attributeConsumingService->appendChild($attributeConsumingServiceElement);
               $serviceElementAddHandler->execute();
@@ -631,18 +721,18 @@ class MetadataMerge extends Common {
             $isRequired = $data['isRequired'];
 
             $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-            if ($friendlyName != '' ) {
+            if ($friendlyName != '') {
               $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
             }
             $attributeConsumingServiceElement->setAttribute('Name', $name);
-            if ($nameFormat != '' ) {
+            if ($nameFormat != '') {
               $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
             }
             $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $requestedAttributeAddHandler->execute();
           }
-          unset ($oldRequestedAttributes[$index]);
+          unset($oldRequestedAttributes[$index]);
           unset($oldServiceIndexes[$index]);
         }
         $child = $child->nextSibling;
@@ -653,10 +743,13 @@ class MetadataMerge extends Common {
         $ssoDescriptor->appendChild($attributeConsumingService);
         $addServiceIndexHandler->execute();
 
-        if(isset($oldServiceElements[$index]['ServiceName'])) {
+        if (isset($oldServiceElements[$index]['ServiceName'])) {
           $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
           foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-            $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
+            $attributeConsumingServiceElement = $this->xml->createElement(
+              self::SAML_MD_SERVICENAME,
+              htmlspecialchars($value)
+            );
             $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $serviceElementAddHandler->execute();
@@ -665,7 +758,10 @@ class MetadataMerge extends Common {
         if (isset($oldServiceElements[$index]['ServiceDescription'])) {
           $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
           foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-            $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, htmlspecialchars($value));
+            $attributeConsumingServiceElement = $this->xml->createElement(
+              self::SAML_MD_SERVICEDESCRIPTION,
+              htmlspecialchars($value)
+            );
             $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $serviceElementAddHandler->execute();
@@ -679,11 +775,11 @@ class MetadataMerge extends Common {
           $isRequired = $data['isRequired'];
 
           $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-          if ($friendlyName != '' ) {
+          if ($friendlyName != '') {
             $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
           }
           $attributeConsumingServiceElement->setAttribute('Name', $name);
-          if ($nameFormat != '' ) {
+          if ($nameFormat != '') {
             $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
           }
           $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
@@ -701,16 +797,18 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeOrganization() {
-    if ( !$this->oldExists) {
+  private function mergeOrganization()
+  {
+    if (!$this->oldExists) {
       return;
     }
     $organizationHandler = $this->config->getDb()->prepare(
-      'SELECT element, lang, data FROM `Organization` WHERE entity_id = :Id ORDER BY element, lang;');
+      'SELECT element, lang, data FROM `Organization` WHERE entity_id = :Id ORDER BY element, lang;'
+    );
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      $order = self::ORDER_ORGANIZATION['md:'.$organization['element']];
+      $order = self::ORDER_ORGANIZATION['md:' . $organization['element']];
       $oldElements[$order][] = $organization;
     }
     if (isset($oldElements)) {
@@ -719,15 +817,15 @@ class MetadataMerge extends Common {
       $organization = false;
       while ($child && ! $organization) {
         switch ($child->nodeName) {
-          case self::SAML_MD_ORGANIZATION :
+          case self::SAML_MD_ORGANIZATION:
             $organization = $child;
             break;
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
+          case self::SAML_MD_CONTACTPERSON:
+          case self::SAML_MD_ADDITIONALMETADATALOCATION:
             $organization = $this->xml->createElement(self::SAML_MD_ORGANIZATION);
             $this->entityDescriptor->insertBefore($organization, $child);
             break;
-          default :
+          default:
         }
         $child = $child->nextSibling;
       }
@@ -748,7 +846,7 @@ class MetadataMerge extends Common {
             if (isset($oldElements[$nextOrder])) {
               foreach ($oldElements[$nextOrder] as $index => $element) {
                 $lang = $element['lang'];
-                $elementmd = 'md:'.$element['element'];
+                $elementmd = 'md:' . $element['element'];
                 $value = $element['data'];
                 $organizationElement = $this->xml->createElement($elementmd);
                 $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
@@ -763,8 +861,8 @@ class MetadataMerge extends Common {
           $elementmd = $child->nodeName;
           if (isset($oldElements[$order])) {
             foreach ($oldElements[$order] as $index => $element) {
-              if ($element['lang'] == $lang && 'md:'.$element['element'] == $elementmd) {
-                unset ($oldElements[$order][$index]);
+              if ($element['lang'] == $lang && 'md:' . $element['element'] == $elementmd) {
+                unset($oldElements[$order][$index]);
               }
             }
           }
@@ -775,7 +873,7 @@ class MetadataMerge extends Common {
         if (isset($oldElements[$nextOrder])) {
           foreach ($oldElements[$nextOrder] as $element) {
             $lang = $element['lang'];
-            $elementmd = 'md:'.$element['element'];
+            $elementmd = 'md:' . $element['element'];
             $value = $element['data'];
             $organizationElement = $this->xml->createElement($elementmd);
             $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
@@ -793,8 +891,9 @@ class MetadataMerge extends Common {
    *
    * @return void
    */
-  private function mergeContactPersons() {
-    if ( !$this->oldExists) {
+  private function mergeContactPersons()
+  {
+    if (!$this->oldExists) {
       return;
     }
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT * FROM `ContactPerson` WHERE `entity_id` = :Id;');
@@ -820,7 +919,7 @@ class MetadataMerge extends Common {
       $contactPerson = false;
       while ($child) {
         switch ($child->nodeName) {
-          case self::SAML_MD_CONTACTPERSON :
+          case self::SAML_MD_CONTACTPERSON:
             $type = $child->getAttribute('contactType');
             if (isset($oldContactPersons[$type])) {
               $subchild = $child->firstChild;
@@ -850,12 +949,16 @@ class MetadataMerge extends Common {
               unset($oldContactPersons[$type]);
             }
             break;
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
+          case self::SAML_MD_ADDITIONALMETADATALOCATION:
             foreach ($oldContactPersons as $type => $oldContactPerson) {
               $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
               $contactPerson->setAttribute('contactType', $type);
               if ($oldContactPerson['subcontactType']) {
-                $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
+                $this->entityDescriptor->setAttributeNS(
+                  self::SAMLXMLNS_URI,
+                  'xmlns:remd',
+                  'http://refeds.org/metadata' # NOSONAR Should be http://
+                );
                 $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
               }
               $this->entityDescriptor->insertBefore($contactPerson, $child);
@@ -870,7 +973,7 @@ class MetadataMerge extends Common {
               }
             }
             break;
-          default :
+          default:
         }
         $child = $child->nextSibling;
       }
@@ -878,7 +981,11 @@ class MetadataMerge extends Common {
         $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
         $contactPerson->setAttribute('contactType', $type);
         if ($oldContactPerson['subcontactType']) {
-          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
+          $this->entityDescriptor->setAttributeNS(
+            self::SAMLXMLNS_URI,
+            'xmlns:remd',
+            'http://refeds.org/metadata' # NOSONAR Should be http://
+          );
           $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
         }
         $this->entityDescriptor->appendChild($contactPerson);

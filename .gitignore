@@ -3,5 +3,5 @@ web/html/config.php
 web/html/vendor/
 *.time
 .vscode/
-Makefile
+/Makefile
 phpdocs

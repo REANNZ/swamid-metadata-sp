@@ -1,4 +1,5 @@
 <?php
+
 //Load composer's autoloader
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
@@ -25,11 +26,10 @@ $serviceHandler = $config->getDb()->prepare(
        LEFT JOIN Mdui AS spdesc ON e.id = spdesc.entity_id AND spdesc.element='Description' AND spdesc.lang = 'en'
        LEFT JOIN Mdui AS logo ON e.id = logo.entity_id AND logo.element='Logo' AND logo.lang='en'
        WHERE e.status = 1 AND e.isSP = 1 AND si.enabled GROUP BY id ORDER BY entityID;"
-    );
+);
 
 $serviceHandler->execute();
 while ($service = $serviceHandler->fetch(PDO::FETCH_ASSOC)) {
-
   $servObj = new \stdClass();
 
   $servObj->id = $service['id'];

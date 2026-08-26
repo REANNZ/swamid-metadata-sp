@@ -1,15 +1,17 @@
 <?php
+
 namespace metadata;
 
 /**
  * Class to hold (and allow extending) attribute definitions
  */
-class AttributeDefsTuakiri extends AttributeDefs {
+class AttributeDefsTuakiri extends AttributeDefs
+{
   /**
    * FRIENDLY_NAMES
    *
    */
-  const FRIENDLY_NAMES_TUAKIRI = array(
+  protected const FRIENDLY_NAMES_TUAKIRI = array(
     // extra attribute in Tuakiri
     'urn:oid:1.3.6.1.4.1.27856.1.2.5' => array(
       'desc' => 'auEduPersonSharedToken', 'standard' => true
@@ -36,7 +38,7 @@ class AttributeDefsTuakiri extends AttributeDefs {
     ),
   );
 
-  const FRIENDLY_NAMES_EXCLUDE = array(
+  protected const FRIENDLY_NAMES_EXCLUDE = array(
     'urn:mace:dir:attribute-def:cn' => false,
     'urn:mace:dir:attribute-def:displayName' => false,
     'urn:mace:dir:attribute-def:eduPersonPrincipalName' => false,
@@ -63,8 +65,14 @@ class AttributeDefsTuakiri extends AttributeDefs {
    * @return array
    */
 
-  public function getAttributeFriendlyNames() {
-    return array_merge(array_diff_key(self::FRIENDLY_NAMES, self::FRIENDLY_NAMES_EXCLUDE), self::FRIENDLY_NAMES_TUAKIRI);
+  public function getAttributeFriendlyNames()
+  {
+    return array_merge(
+      array_diff_key(
+        self::FRIENDLY_NAMES,
+        self::FRIENDLY_NAMES_EXCLUDE
+      ),
+      self::FRIENDLY_NAMES_TUAKIRI
+    );
   }
 }
-
