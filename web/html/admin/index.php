@@ -1842,6 +1842,8 @@ function annualConfirmation($entitiesId)
   global $config;
   $federation = $config->getFederation();
 
+  validateEntity($entitiesId);
+
   $metadata = new \metadata\Metadata($entitiesId);
   if ($metadata->status() == 1) {
     $confirm = false;
@@ -1948,7 +1950,7 @@ function annualConfirmation($entitiesId)
       );
     }
     if (! $confirm) {
-      printf('    <br><br><h5>The following have admin-access to this entity</h5><ul>%s', "\n");
+      printf('    <br><br>%s    <h5>The following have admin-access to this entity</h5>%s    <ul>%s', "\n", "\n", "\n");
       foreach ($metadata->getResponsibles() as $user) {
         $delete = ($user_id == $user['id'] && $userLevel < 20) ? ''
           : sprintf(
@@ -1971,8 +1973,8 @@ function annualConfirmation($entitiesId)
           "\n"
         );
       }
+      print '    </ul>';
     }
-    printf('    </ul>%s', "\n");
   } else {
     $html->showHeaders('NotFound');
     $menuActive = 'myEntities';
