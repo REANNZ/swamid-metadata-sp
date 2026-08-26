@@ -1,20 +1,23 @@
 <?php
+
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
 $config = new \metadata\Configuration();
 
-function parseJson($json) {
+function parseJson($json)
+{
   global $config;
   $importFrom = date('Y-m-d H:i', time() - (7 * 24 * 60 * 60)); // 1 week
   $removeBefore = date('Y-m-d H:i', time() - (396 * 24 * 60 * 60)); // 1 year + 1 month
 
-  if ($results = json_decode($json,true)) {
+  if ($results = json_decode($json, true)) {
     if (isset($results['objects'])) {
       $resultHandler = $config->getDb()->prepare(
         'INSERT INTO TestResults (`entityID`, `test`, `time`, `result` )
         VALUES (:EntityID, :Test, :Time, :Result)
-        ON DUPLICATE KEY UPDATE `time` = :Time, `result` = :Result');
+        ON DUPLICATE KEY UPDATE `time` = :Time, `result` = :Result'
+      );
       $resultHandler->bindParam(':EntityID', $entityID);
       $resultHandler->bindParam(':Test', $test);
       $resultHandler->bindParam(':Time', $time);
@@ -41,7 +44,8 @@ function parseJson($json) {
 }
 
 
-function fetchJson() {
+function fetchJson()
+{
   global $config;
   $rcURL = $config->getFederation()['releaseCheckResultsURL'];
   if (!$rcURL) {
@@ -67,23 +71,23 @@ function fetchJson() {
       $continue = false;
     } else {
       switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
-        case 200 :
+        case 200:
           parseJson($output);
           $continue = false;
           break;
-        case 403 :
+        case 403:
           print "Access denied. Can't check URL.";
           $continue = false;
           break;
-        case 404 :
+        case 404:
           print 'Page not found.';
           $continue = false;
           break;
-        case 503 :
+        case 503:
           print "Service Unavailable. Can't check URL.";
           $continue = false;
           break;
-        default :
+        default:
           print "Got code $http_code from web-server. Can't handle :-(";
           $continue = false;
       }

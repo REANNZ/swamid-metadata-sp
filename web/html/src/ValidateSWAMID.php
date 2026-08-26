@@ -1,4 +1,5 @@
 <?php
+
 namespace metadata;
 
 use PDO;
@@ -7,15 +8,16 @@ use PDO;
  * Class to Validate SAML information
  * SWAMID specific code
  */
-class ValidateSWAMID extends Validate {
+class ValidateSWAMID extends Validate
+{
   use CommonTrait;
 
   # Setup
 
-  const TEXT_HTTP = 'http://';
-  const TEXT_HTTPS = 'https://';
-  const TEXT_521 = '5.2.1';
-  const TEXT_621 = '6.2.1';
+  protected const TEXT_HTTP = 'http://';
+  protected const TEXT_HTTPS = 'https://';
+  protected const TEXT_521 = '5.2.1';
+  protected const TEXT_621 = '6.2.1';
 
   /**
    * Validate SAML
@@ -27,7 +29,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  public function saml(){
+  public function saml()
+  {
     if (! $this->entityExists) {
       return 1;
     }
@@ -37,12 +40,17 @@ class ValidateSWAMID extends Validate {
     // 5.1.1 -> 5.1.5 / 6.1.1 -> 6.1.5
     $this->checkLangElements();
     // 5.1.7 /6.1.7
-    if (! (substr($this->entityID, 0, 4) == 'urn:' ||
+    if (
+      ! (substr($this->entityID, 0, 4) == 'urn:' ||
       substr($this->entityID, 0, 8) == self::TEXT_HTTPS ||
-      substr($this->entityID, 0, 7) == self::TEXT_HTTP )) {
-        $this->error .= $this->selectError('5.1.7', '6.1.7',
-          'entityID MUST start with either urn:, https:// or http://.');
-    } elseif (substr($this->entityID, 0, 4) == 'urn:' ) {
+      substr($this->entityID, 0, 7) == self::TEXT_HTTP)
+    ) {
+        $this->error .= $this->selectError(
+          '5.1.7',
+          '6.1.7',
+          'entityID MUST start with either urn:, https:// or http://.'
+        );
+    } elseif (substr($this->entityID, 0, 4) == 'urn:') {
       $this->warning .= $this->selectError('5.1.7', '6.1.7', 'entityID SHOULD NOT start with urn: for new entities.');
     }
 
@@ -76,8 +84,9 @@ class ValidateSWAMID extends Validate {
     if ($this->isAA) {
       // 5.1.20, 5.2.x
       $this->checkRequiredSAMLcertificates('AttributeAuthority');
-      $this->result .= 'The AttributeAuthority is a part of the Identity Provider and follow the same rules for SWAMID Tech 5.1.21 and 5.2.x.<br>';
-      $this->result .= "If the AttributeAuthority part of the entity is not used SWAMID recommends that is removed.\n";
+      $this->result .= 'The AttributeAuthority is a part of the Identity Provider and follow the same rules for' .
+        ' SWAMID Tech 5.1.21 and 5.2.x.<br>' .
+        "If the AttributeAuthority part of the entity is not used SWAMID recommends that is removed.\n";
     }
 
     // 5.1.22 / 6.1.20
@@ -86,13 +95,19 @@ class ValidateSWAMID extends Validate {
     // 5.1.23 -> 5.1.28 / 6.1.21 -> 6.1.26
     $this->checkRequiredContactPersonElements();
 
-    if ($this->isSPandRandS) { $this->validateSPRandS(); }
+    if ($this->isSPandRandS) {
+      $this->validateSPRandS();
+    }
 
-    if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
-    if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
+    if ($this->isSPandCoCov1) {
+      $this->validateSPCoCov1();
+    }
+    if ($this->isSPandCoCov2) {
+      $this->validateSPCoCov2();
+    }
     if (! $this->isSIRTFI2) {
-      $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN to support ';
-      $this->warning .= "the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
+      $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN' .
+        " to support the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
     }
     $this->saveResults();
   }
@@ -111,7 +126,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkLangElements() {
+  private function checkLangElements()
+  {
     $mduiArray = array();
     $usedLangArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `type`, `lang`, `element`
@@ -126,29 +142,45 @@ class ValidateSWAMID extends Validate {
       } else {
         $usedLangArray[$lang] = $lang;
         if ($type == 'SPSSO') {
-          $this->error .= sprintf("SWAMID Tech 6.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
-            $lang, $element, $type);
+          $this->error .= sprintf(
+            "SWAMID Tech 6.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
+            $lang,
+            $element,
+            $type
+          );
         } else {
-          $this->error .= sprintf("SWAMID Tech 5.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
-            $lang, $element, $type);
+          $this->error .= sprintf(
+            "SWAMID Tech 5.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
+            $lang,
+            $element,
+            $type
+          );
         }
       }
 
-      if (! isset ($mduiArray[$type])) {
+      if (! isset($mduiArray[$type])) {
         $mduiArray[$type] = array();
       }
-      if (! isset ($mduiArray[$type][$element])) {
+      if (! isset($mduiArray[$type][$element])) {
         $mduiArray[$type][$element] = array();
       }
 
       if (isset($mduiArray[$type][$element][$lang])) {
         if ($element != 'Logo') {
           if ($type == 'IDPSSO') {
-            $this->error .= sprintf("SWAMID Tech 5.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
-              $element, $lang, $type);
+            $this->error .= sprintf(
+              "SWAMID Tech 5.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
+              $element,
+              $lang,
+              $type
+            );
           } else {
-            $this->error .= sprintf("SWAMID Tech 6.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
-              $element, $lang, $type);
+            $this->error .= sprintf(
+              "SWAMID Tech 6.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
+              $element,
+              $lang,
+              $type
+            );
           }
         }
       } else {
@@ -171,14 +203,19 @@ class ValidateSWAMID extends Validate {
       if (isset($serviceArray[$element][$index][$lang])) {
         $this->error .= sprintf(
           "SWAMID Tech 6.1.2: More than one %s with lang=%s in AttributeConsumingService (index=%d).\n",
-          $element, $lang, $index);
+          $element,
+          $lang,
+          $index
+        );
       } else {
         $serviceArray[$element][$index][$lang] = true;
       }
     }
 
     $organizationArray = array();
-    $organizationHandler = $this->config->getDb()->prepare('SELECT `lang`, `element` FROM `Organization` WHERE `entity_id` = :Id');
+    $organizationHandler = $this->config->getDb()->prepare(
+      'SELECT `lang`, `element` FROM `Organization` WHERE `entity_id` = :Id'
+    );
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -186,8 +223,11 @@ class ValidateSWAMID extends Validate {
       $element = $organization['element'];
       $usedLangArray[$lang] = $lang;
       if (isset($organizationArray[$element][$lang])) {
-        $this->error .= $this->selectError('5.1.2', '6.1.2',
-          sprintf('More than one %s with lang=%s in Organization.', $element, $lang));
+        $this->error .= $this->selectError(
+          '5.1.2',
+          '6.1.2',
+          sprintf('More than one %s with lang=%s in Organization.', $element, $lang)
+        );
       } else {
         $organizationArray[$element][$lang] = true;
       }
@@ -199,15 +239,23 @@ class ValidateSWAMID extends Validate {
     foreach ($mduiArray as $type => $elementArray) {
       foreach ($elementArray as $element => $langArray) {
         foreach ($usedLangArray as $lang) {
-          if ( $lang == '' ) {
+          if ($lang == '') {
             unset($usedLangArray[$lang]);
           } elseif (! isset($langArray[$lang])) {
             if ($type == 'IDPSSO') {
-              $this->error .= sprintf("SWAMID Tech 5.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
-                $lang, $element, $type);
+              $this->error .= sprintf(
+                "SWAMID Tech 5.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
+                $lang,
+                $element,
+                $type
+              );
             } else {
-              $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
-                $lang, $element, $type);
+              $this->error .= sprintf(
+                "SWAMID Tech 6.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
+                $lang,
+                $element,
+                $type
+              );
             }
           }
         }
@@ -217,8 +265,12 @@ class ValidateSWAMID extends Validate {
       foreach ($indexArray as $langArray) {
         foreach ($usedLangArray as $lang) {
           if (! isset($langArray[$lang])) {
-            $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
-              $lang, $element, $index);
+            $this->error .= sprintf(
+              "SWAMID Tech 6.1.3: Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
+              $lang,
+              $element,
+              $index
+            );
           }
         }
       }
@@ -226,8 +278,11 @@ class ValidateSWAMID extends Validate {
     foreach ($organizationArray as $element => $langArray) {
       foreach ($usedLangArray as $lang) {
         if (! isset($langArray[$lang])) {
-          $this->error .= $this->selectError('5.1.3', '6.1.3',
-            sprintf('Missing lang=%s for %s in Organization.', $lang, $element));
+          $this->error .= $this->selectError(
+            '5.1.3',
+            '6.1.3',
+            sprintf('Missing lang=%s for %s in Organization.', $lang, $element)
+          );
         }
       }
     }
@@ -239,7 +294,7 @@ class ValidateSWAMID extends Validate {
     // 5.1.5/6.1.5 Metadata elements that support the lang attribute SHOULD
     //             have a definition with language Swedish (sv).
     if (! isset($usedLangArray['sv'])) {
-      $this->warning .= $this->selectError('5.1.5', '6.1.5' ,'Missing MDUI/Organization/... with lang=sv.');
+      $this->warning .= $this->selectError('5.1.5', '6.1.5', 'Missing MDUI/Organization/... with lang=sv.');
     }
   }
 
@@ -257,22 +312,25 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkEntityAttributes($type) {
+  private function checkEntityAttributes($type)
+  {
     $standardAttributes = $this->getAttributeDefs()->getStandardEntityAttributes();
 
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `attribute`
       FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
-    if ($type == 'IDPSSO' ) {
+    if ($type == 'IDPSSO') {
       //5.1.9 SWAMID Identity Assurance Profile compliance MUST be registered in
       //      the assurance certification entity attribute as defined by the profiles.
       $swamid519error = true;
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'assurance-certification');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        $swamid519error = $entityAttribute['attribute'] == 'http://www.swamid.se/policy/assurance/al1' ? # NOSONAR Should be http://
-          false : $swamid519error ;
+        $swamid519error =
+          $entityAttribute['attribute'] == 'http://www.swamid.se/policy/assurance/al1' # NOSONAR Should be http://
+            ? false
+            : $swamid519error;
       }
       if ($swamid519error) {
         $this->error .= 'SWAMID Tech 5.1.9: SWAMID Identity Assurance Profile compliance MUST';
@@ -293,10 +351,15 @@ class ValidateSWAMID extends Validate {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        if (isset($standardAttributes['entity-category'][$entityAttribute['attribute']]) &&
-          ! $standardAttributes['entity-category'][$entityAttribute['attribute']]['standard']) {
-            $this->error .= sprintf ("Entity Category Error: The entity category %s is deprecated.\n",
-              $entityAttribute['attribute']);
+        // detect deprecated Entity Categories
+        if (
+          isset($standardAttributes['entity-category'][$entityAttribute['attribute']]) &&
+          ! $standardAttributes['entity-category'][$entityAttribute['attribute']]['standard']
+        ) {
+          $this->error .= sprintf(
+            "Entity Category Error: The entity category %s is deprecated.\n",
+            $entityAttribute['attribute']
+          );
         }
       }
     }
@@ -312,7 +375,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkErrorURL() {
+  private function checkErrorURL()
+  {
     $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
       FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -334,7 +398,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkIDPScope() {
+  private function checkIDPScope()
+  {
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $scopesHandler->execute();
@@ -342,8 +407,10 @@ class ValidateSWAMID extends Validate {
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       $missingScope = false;
       if ($scope['regexp']) {
-        $this->error .= sprintf("SWAMID Tech 5.1.16: IdP Scopes (%s) MUST NOT include regular expressions.\n",
-          htmlspecialchars($scope['scope']));
+        $this->error .= sprintf(
+          "SWAMID Tech 5.1.16: IdP Scopes (%s) MUST NOT include regular expressions.\n",
+          htmlspecialchars($scope['scope'])
+        );
       }
     }
     if ($missingScope) {
@@ -366,7 +433,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkRequiredMDUIelementsIdP() {
+  private function checkRequiredMDUIelementsIdP()
+  {
     $elementArray = array ('DisplayName' => false,
       'Description' => false,
       'InformationURL' => false,
@@ -388,8 +456,8 @@ class ValidateSWAMID extends Validate {
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $elementArray[$mdui['element']] = true;
-      switch($mdui['element']) {
-        case 'DisplayName' :
+      switch ($mdui['element']) {
+        case 'DisplayName':
           $data = $mdui['data'];
           $lang = $mdui['lang'];
           $entityID = $mdui['entityID'];
@@ -398,22 +466,25 @@ class ValidateSWAMID extends Validate {
           $mduiDNUniqHandler->bindParam(self::BIND_ENTITYID, $entityID);
           $mduiDNUniqHandler->execute();
           while ($duplicate = $mduiDNUniqHandler->fetch(PDO::FETCH_ASSOC)) {
-            $this->error .= sprintf("SWAMID Tech 5.1.17: DisplayName for lang %s is also set on %s.\n",
-              $lang, htmlspecialchars($duplicate['entityID']));
+            $this->error .= sprintf(
+              "SWAMID Tech 5.1.17: DisplayName for lang %s is also set on %s.\n",
+              $lang,
+              htmlspecialchars($duplicate['entityID'])
+            );
           }
           break;
-        case 'Logo' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS) {
+        case 'Logo':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS) {
             $this->error .= "SWAMID Tech 5.1.17: Logo must start with <b>https://</b> .\n";
           }
           break;
-        case 'InformationURL' :
-        case 'PrivacyStatementURL' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
+        case 'InformationURL':
+        case 'PrivacyStatementURL':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS && substr($mdui['data'], 0, 7) != self::TEXT_HTTP) {
             $this->error .= sprintf('SWAMID Tech 5.1.17: %s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
-        default :
+        default:
       }
     }
 
@@ -436,7 +507,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkRequiredMDUIelementsSP() {
+  private function checkRequiredMDUIelementsSP()
+  {
     $elementArray = array ('DisplayName' => false,
       'Description' => false,
       'InformationURL' => false,
@@ -447,19 +519,19 @@ class ValidateSWAMID extends Validate {
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $elementArray[$mdui['element']] = true;
-      switch($mdui['element']) {
-        case 'Logo' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS) {
+      switch ($mdui['element']) {
+        case 'Logo':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS) {
             $this->error .= "SWAMID Tech 6.1.13: Logo must start with <b>https://</b> .\n";
           }
           break;
-        case 'InformationURL' :
-        case 'PrivacyStatementURL' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
+        case 'InformationURL':
+        case 'PrivacyStatementURL':
+          if (substr($mdui['data'], 0, 8) != self::TEXT_HTTPS && substr($mdui['data'], 0, 7) != self::TEXT_HTTP) {
             $this->error .= sprintf('SWAMID Tech 6.1.12: %s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
-        default :
+        default:
       }
     }
 
@@ -484,12 +556,15 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkRequiredSAMLcertificates($type) {
+  private function checkRequiredSAMLcertificates($type)
+  {
     $keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false, 'AttributeAuthority' => false);
-    $keyInfoHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
+    $keyInfoHandler = $this->config->getDb()->prepare(
+      'SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
       FROM `KeyInfo`
       WHERE `entity_id` = :Id AND `type` =:Type
-      ORDER BY notValidAfter DESC');
+      ORDER BY notValidAfter DESC'
+    );
     $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $keyInfoHandler->bindValue(self::BIND_TYPE, $type);
     $keyInfoHandler->execute();
@@ -511,8 +586,8 @@ class ValidateSWAMID extends Validate {
     while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       $validCertExists = false;
       switch ($keyInfo['use']) {
-        case 'encryption' :
-          if ($keyInfo['notValidAfter'] > $timeNow ) {
+        case 'encryption':
+          if ($keyInfo['notValidAfter'] > $timeNow) {
             if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
               $keyInfoArray['SPSSO'] = true;
             }
@@ -522,8 +597,8 @@ class ValidateSWAMID extends Validate {
             $oldCertFound = true;
           }
           break;
-        case 'signing' :
-          if ($keyInfo['notValidAfter'] > $timeNow ) {
+        case 'signing':
+          if ($keyInfo['notValidAfter'] > $timeNow) {
             if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
               $keyInfoArray['IDPSSO'] = true;
               $keyInfoArray['AttributeAuthority'] = true;
@@ -534,8 +609,8 @@ class ValidateSWAMID extends Validate {
             $oldCertFound = true;
           }
           break;
-        case 'both' :
-          if ($keyInfo['notValidAfter'] > $timeNow ) {
+        case 'both':
+          if ($keyInfo['notValidAfter'] > $timeNow) {
             if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
               $keyInfoArray['SPSSO'] = true;
               $keyInfoArray['IDPSSO'] = true;
@@ -548,15 +623,15 @@ class ValidateSWAMID extends Validate {
             $oldCertFound = true;
           }
           break;
-        default :
+        default:
           break;
       }
       switch ($keyInfo['key_type']) {
-        case 'RSA' :
-        case 'DSA' :
-          if ($keyInfo['bits'] >= 4096 ) {
+        case 'RSA':
+        case 'DSA':
+          if ($keyInfo['bits'] >= 4096) {
             $swamid521Level[$keyInfo['use']] = 3;
-          } elseif ($keyInfo['bits'] >= 2048 && $swamid521Level[$keyInfo['use']] < 2 ) {
+          } elseif ($keyInfo['bits'] >= 2048 && $swamid521Level[$keyInfo['use']] < 2) {
             if ($keyInfo['notValidAfter'] > '2030-12-31' && $keyInfo['bits'] < 3072) {
               $swamid521Level2030[$keyInfo['use']] = true;
             }
@@ -564,32 +639,38 @@ class ValidateSWAMID extends Validate {
           } elseif ($swamid521Level[$keyInfo['use']] < 1) {
             $swamid521Level[$keyInfo['use']] = 1;
           }
-          if ($keyInfo['bits'] < 2048) { $smalKeyFound = true; }
+          if ($keyInfo['bits'] < 2048) {
+            $smalKeyFound = true;
+          }
           break;
-        case 'EC' :
-          if ($keyInfo['bits'] >= 384 ) {
-              $swamid521Level[$keyInfo['use']] = 3;
-          } elseif ($keyInfo['bits'] >= 256 && $swamid521Level[$keyInfo['use']] < 2 ) {
-              $swamid521Level[$keyInfo['use']] = 2;
-            } else {
-              $swamid521Level[$keyInfo['use']] = 1;
-            }
-          if ($keyInfo['bits'] < 256) { $smalKeyFound = true; }
+        case 'EC':
+          if ($keyInfo['bits'] >= 384) {
+            $swamid521Level[$keyInfo['use']] = 3;
+          } elseif ($keyInfo['bits'] >= 256 && $swamid521Level[$keyInfo['use']] < 2) {
+            $swamid521Level[$keyInfo['use']] = 2;
+          } else {
+            $swamid521Level[$keyInfo['use']] = 1;
+          }
+          if ($keyInfo['bits'] < 256) {
+            $smalKeyFound = true;
+          }
           break;
-        default :
-            break;
+        default:
+          break;
       }
-      if ($keyInfo['notValidAfter'] <= $timeNow ) {
+      if ($keyInfo['notValidAfter'] <= $timeNow) {
         if ($validCertExists) {
           $swamid522errorNB = true;
         } else {
           $swamid522error = true;
         }
-      } elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
-        $this->warning .= sprintf (
+      } elseif ($keyInfo['notValidAfter'] <= $timeWarn) {
+        $this->warning .= sprintf(
           "Certificate (%s) %s will soon expire. %s\n",
-          $keyInfo['use'], htmlspecialchars($keyInfo['subject']),
-          'New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.');
+          $keyInfo['use'],
+          htmlspecialchars($keyInfo['subject']),
+          'New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.'
+        );
       }
 
       if ($keyInfo['subject'] != $keyInfo['issuer']) {
@@ -620,20 +701,20 @@ class ValidateSWAMID extends Validate {
     foreach (array('encryption', 'signing') as $use) {
       if ($swamid521Level[$use] > 0) {
         switch ($swamid521Level[$use]) {
-          case 3 :
+          case 3:
             // Key >= 4096 or >= 384
             // Do nothing. Keep current level.
             break;
-          case 2 :
+          case 2:
             // Key >= 2048 and < 4096  // >= 256 and <384
             $swamid521error = $swamid521error == 0 ? 1 : $swamid521error;
             $swamid5212030error = $swamid5212030error ? true : $swamid521Level2030[$use];
             break;
-          case 1 :
+          case 1:
             // To small key
             $swamid521error = 2;
             break;
-          default :
+          default:
             break;
         }
         $keyFound = true;
@@ -644,12 +725,12 @@ class ValidateSWAMID extends Validate {
     if ($swamid521Level['both'] > 0) {
       // Error code could get better if both is better than encryption/signing
       switch ($swamid521Level['both']) {
-        case 3 :
+        case 3:
           // Key >= 4096 or >= 384
           $swamid521error = 0;
           $swamid5212030error = false;
           break;
-        case 2 :
+        case 2:
           // Key >= 2048 and < 4096  // >= 256 and <384
           if ($keyFound) {
             // If already checked enc/signing lower if we are better
@@ -667,46 +748,58 @@ class ValidateSWAMID extends Validate {
             $swamid521error = 2;
           }
           break;
-        default :
+        default:
       }
     }
 
     if ($swamid521error) {
       if ($swamid521error == 1) {
         if ($smalKeyFound) {
-          $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-            ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+          $this->errorNB .= sprintf(
+            'SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
+            ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521
+          );
           $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
         } else {
           $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
           $this->warning .= " Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n";
         }
       } elseif ($swamid521error == 2) {
-        $this->error .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable',
-          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+        $this->error .= sprintf(
+          'SWAMID Tech %s: Certificate MUST NOT use shorter comparable',
+          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521
+        );
         $this->error .= ' key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate';
         $this->error .= " should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
       }
     } else {
       if ($smalKeyFound) {
-        $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+        $this->errorNB .= sprintf(
+          'SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
+          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521
+        );
         $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
       }
     }
     if ($swamid5212030error) {
-      $this->warning .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength',
-        ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+      $this->warning .= sprintf(
+        'SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength',
+        ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521
+      );
       $this->warning .= " (in the sense of NIST SP 800-57) than a 3072-bit RSA key if valid after 2030-12-31.\n";
     }
 
     if ($swamid522error) {
-      $this->error .= sprintf('SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New',
-        ($type == 'SPSSO') ? '6.2.2' : '5.2.2');
+      $this->error .= sprintf(
+        'SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New',
+        ($type == 'SPSSO') ? '6.2.2' : '5.2.2'
+      );
       $this->error .= " certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
     } elseif ($swamid522errorNB) {
-      $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Signing and encryption certificates',
-        ($type == 'SPSSO') ? '6.2.2' : '5.2.2');
+      $this->errorNB .= sprintf(
+        'SWAMID Tech %s: (NonBreaking) Signing and encryption certificates',
+        ($type == 'SPSSO') ? '6.2.2' : '5.2.2'
+      );
       $this->errorNB .= " MUST NOT be expired.\n";
     }
 
@@ -734,7 +827,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkRequiredOrganizationElements() {
+  private function checkRequiredOrganizationElements()
+  {
     $elementArray = array('OrganizationName' => false, 'OrganizationDisplayName' => false, 'OrganizationURL' => false);
 
     $organizationHandler = $this->config->getDb()->prepare('SELECT DISTINCT `element`
@@ -763,10 +857,13 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  protected function checkRequiredContactPersonElements() {
+  protected function checkRequiredContactPersonElements()
+  {
     $usedContactTypes = array();
-    $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
-      FROM `ContactPerson` WHERE `entity_id` = :Id');
+    $contactPersonHandler = $this->config->getDb()->prepare(
+      'SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
+      FROM `ContactPerson` WHERE `entity_id` = :Id'
+    );
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
 
@@ -777,26 +874,38 @@ class ValidateSWAMID extends Validate {
       //        of contactType other with remd:contactType http://refeds.org/metadata/contactType/security.
       // If the element is present, a GivenName element MUST be present and the ContactPerson MUST
       //  respect the Traffic Light Protocol (TLP) during all incident response correspondence.
-      if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
+      if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security') {
         $contactType = self::CT_SECURITY;
-        if ( $contactPerson['givenName'] == '') {
-          $this->error .= $this->selectError('5.1.28', '6.1.27',
-            'GivenName element MUST be present for security ContactPerson.');
+        if ($contactPerson['givenName'] == '') {
+          $this->error .= $this->selectError(
+            '5.1.28',
+            '6.1.27',
+            'GivenName element MUST be present for security ContactPerson.'
+          );
         }
       }
 
       // 5.1.23/6.1.22 ContactPerson elements MUST have an EmailAddress element
       if ($contactPerson['emailAddress'] == '') {
-        $this->error .= $this->selectError('5.1.23' , '6.1.22',
-          sprintf('ContactPerson [%s] elements MUST have an EmailAddress element.', $contactType));
+        $this->error .= $this->selectError(
+          '5.1.23',
+          '6.1.22',
+          sprintf('ContactPerson [%s] elements MUST have an EmailAddress element.', $contactType)
+        );
       } elseif (substr($contactPerson['emailAddress'], 0, 7) != 'mailto:') {
-        $this->error .= $this->selectError('5.1.23', '6.1.22',
-          sprintf('ContactPerson [%s] EmailAddress MUST start with mailto:.', $contactType));
+        $this->error .= $this->selectError(
+          '5.1.23',
+          '6.1.22',
+          sprintf('ContactPerson [%s] EmailAddress MUST start with mailto:.', $contactType)
+        );
       }
       // 5.1.24/6.1.23 There MUST NOT be more than one ContactPerson element of each type.
-      if ( isset($usedContactTypes[$contactType])) {
-        $this->error .= $this->selectError('5.1.24', '6.1.23',
-          sprintf('There MUST NOT be more than one ContactPerson element of type = %s.', $contactType));
+      if (isset($usedContactTypes[$contactType])) {
+        $this->error .= $this->selectError(
+          '5.1.24',
+          '6.1.23',
+          sprintf('There MUST NOT be more than one ContactPerson element of type = %s.', $contactType)
+        );
       } else {
         $usedContactTypes[$contactType] = true;
       }
@@ -804,18 +913,18 @@ class ValidateSWAMID extends Validate {
     }
 
     // 5.1.25/6.1.24 Identity Providers MUST have one ContactPerson element of type administrative.
-    if (!isset ($usedContactTypes['administrative'])) {
-      $this->error .= $this->selectError('5.1.25','6.1.24','Missing ContactPerson of type administrative');
+    if (!isset($usedContactTypes['administrative'])) {
+      $this->error .= $this->selectError('5.1.25', '6.1.24', 'Missing ContactPerson of type administrative');
     }
 
     // 5.1.26/6.1.25 Identity Providers MUST have one ContactPerson element of type technical.
-    if (!isset ($usedContactTypes['technical'])) {
-      $this->error .= $this->selectError('5.1.26','6.1.25','Missing ContactPerson of type technical.');
+    if (!isset($usedContactTypes['technical'])) {
+      $this->error .= $this->selectError('5.1.26', '6.1.25', 'Missing ContactPerson of type technical.');
     }
 
     // 5.1.27 Identity Providers MUST have one ContactPerson element of type support.
     // 6.1.26 Service Providers SHOULD have one ContactPerson element of type support.
-    if (!isset ($usedContactTypes['support'])) {
+    if (!isset($usedContactTypes['support'])) {
       if ($this->isIdP) {
         $this->error .= $this->selectError('5.1.27', '6.1.26', 'Missing ContactPerson of type support.');
       } else {
@@ -824,7 +933,7 @@ class ValidateSWAMID extends Validate {
     }
 
     // 5.1.28 / 6.1.26 Identity Providers SHOULD have one ContactPerson element of contactType other
-    if (!isset ($usedContactTypes[self::CT_SECURITY])) {
+    if (!isset($usedContactTypes[self::CT_SECURITY])) {
       if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } else {
@@ -833,8 +942,9 @@ class ValidateSWAMID extends Validate {
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }
     } elseif (isset($contactEmail['support']) && $contactEmail['support'] == $contactEmail[self::CT_SECURITY]) {
-      $this->warning .= 'Swamid advises against using the same email address for both support and security contact, ';
-      $this->warning .= "as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.\n";
+      $this->warning .= 'Swamid advises against using the same email address for both support and security contact, ' .
+        'as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.' .
+        "\n";
     }
   }
 
@@ -852,7 +962,8 @@ class ValidateSWAMID extends Validate {
    *
    * @return string
    */
-  private function selectError($idpCode,$spCode,$error) {
+  private function selectError($idpCode, $spCode, $error)
+  {
     if ($this->isIdP) {
       if ($this->isSP) {
         # Both IdP and SP

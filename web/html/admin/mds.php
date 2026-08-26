@@ -12,9 +12,11 @@ $html = new \metadata\HTML();
 $errorURL = isset($_SERVER['Meta-errorURL'])
   ? '<br><a href="' . $_SERVER['Meta-errorURL'] . '">More information</a><br>'
   : '<br>';
-$errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
+$errorURL = str_replace(
+  array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
   array(time(), $config->baseURL() . 'shibboleth', $_SERVER['Shib-Session-ID']),
-  $errorURL);
+  $errorURL
+);
 
 $errors = '';
 
@@ -27,7 +29,8 @@ if (isset($_SERVER['eduPersonPrincipalName'])) {
     str_replace(
       array('ERRORURL_CODE', 'ERRORURL_CTX'),
       array('IDENTIFICATION_FAILURE', 'eduPersonPrincipalName'),
-      $errorURL);
+      $errorURL
+    );
 }
 
 if (isset($_SERVER['displayName'])) {
@@ -35,9 +38,9 @@ if (isset($_SERVER['displayName'])) {
 } elseif (isset($_SERVER['givenName'])) {
   $fullName = $_SERVER['givenName'];
   if (isset($_SERVER['sn'])) {
-    $fullName .= ' ' .$_SERVER['sn'];
+    $fullName .= ' ' . $_SERVER['sn'];
   }
-} else  {
+} else {
   $fullName = '';
 }
 
@@ -55,8 +58,10 @@ if ($errors != '') {
 }
 
 $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
-if ($userLevel < 5) { exit; }
-$displayName = '<div> Logged in as : <br> ' . htmlspecialchars($fullName) . ' (' . htmlspecialchars($EPPN) .')</div>';
+if ($userLevel < 5) {
+  exit;
+}
+$displayName = '<div> Logged in as : <br> ' . htmlspecialchars($fullName) . ' (' . htmlspecialchars($EPPN) . ')</div>';
 $html->setDisplayName($displayName);
 $collapseIcons = array();
 
@@ -67,31 +72,31 @@ try {
   $db = new PDO($dsn);
   // set the PDO error mode to exception
   $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
+} catch (PDOException $e) {
   echo "Error: " . $e->getMessage();
 }
 
 $html->showHeaders('MDS info');
 if (isset($_GET['action'])) {
-  switch($_GET['action']) {
-    case 'hosts' :
+  switch ($_GET['action']) {
+    case 'hosts':
       $menuActive = 'hosts';
       showMenu();
       showHosts();
       $html->addTableSort('host-table');
       break;
-    case 'software' :
+    case 'software':
       $menuActive = 'software';
       showMenu();
       showSoftwares();
       break;
-    case 'feeds' :
+    case 'feeds':
       $menuActive = 'feeds';
       showMenu();
       showFeeds();
       $html->addTableSort('feed-table');
       break;
-    default :
+    default:
   }
 } else {
   showMenu();
@@ -102,7 +107,8 @@ if (isset($_GET['action'])) {
 $html->showFooter($collapseIcons);
 # End of page
 
-function showSoftwares(){
+function showSoftwares()
+{
   global $db, $collapseIcons;
   $softwareAgeHandler = $db->prepare('SELECT MIN(`lastSeen`) AS startSeen FROM `hostSoftware`');
   $softwaresHandler = $db->prepare(
@@ -110,12 +116,14 @@ function showSoftwares(){
     FROM `softwares`, `hostSoftware`
     WHERE `id` = `hostSoftware`.`softwares_id`
     GROUP BY `id`
-    ORDER BY `name` COLLATE NOCASE ASC');
+    ORDER BY `name` COLLATE NOCASE ASC'
+  );
   $hostHandler = $db->prepare(
     'SELECT `id`, `ip`, `name`, `lastSeen`
     FROM `hosts`, `hostSoftware`
     WHERE `hosts_id` = `hosts`.`id` AND `softwares_id` = :SoftwareID
-    ORDER BY `ip`');
+    ORDER BY `ip`'
+  );
   $softwareAgeHandler->execute();
   if ($softwareAge = $softwareAgeHandler->fetch(PDO::FETCH_ASSOC)) {
     printf('
@@ -135,9 +143,15 @@ function showSoftwares(){
         <div class="col"><ul>%s', $name, $name, $name, $software['name'], $software['count'], $show, $name, "\n");
     $collapseIcons[] = $name;
     $hostHandler->execute(array('SoftwareID' => $software['id']));
-    while ($host = $hostHandler->fetch(PDO::FETCH_ASSOC)){
-      printf('        <li><a href="?action=hosts&host=%d">%s</a> (%s) - %s</li>%s',
-        $host['id'], $host['ip'], $host['name'], $host['lastSeen'], "\n");
+    while ($host = $hostHandler->fetch(PDO::FETCH_ASSOC)) {
+      printf(
+        '        <li><a href="?action=hosts&host=%d">%s</a> (%s) - %s</li>%s',
+        $host['id'],
+        $host['ip'],
+        $host['name'],
+        $host['lastSeen'],
+        "\n"
+      );
     }
     printf('        </ul></div><!-- end col -->
       </div><!-- end row -->
@@ -145,60 +159,76 @@ function showSoftwares(){
   }
 }
 
-function showHosts(){
+function showHosts()
+{
   global $db;
   if (isset($_GET['host'])) {
     $hostHandler = $db->prepare(
       'SELECT `id`, `ip`, `name`
       FROM `hosts`
-      WHERE `id` = :Host_id');
+      WHERE `id` = :Host_id'
+    );
     $hostHandler->execute(array('Host_id' => $_GET['host']));
     if ($host = $hostHandler->fetch(PDO::FETCH_ASSOC)) {
       $softwaresHandler = $db->prepare(
         'SELECT `name`, `lastSeen`
         FROM `softwares`, `hostSoftware`
         WHERE `hosts_id` = :Host_id AND `softwares_id` = `softwares`.`id`
-        ORDER BY `name` COLLATE NOCASE ASC');
+        ORDER BY `name` COLLATE NOCASE ASC'
+      );
       $feedsHandler = $db->prepare(
         'SELECT `name`, `lastSeen`
         FROM `feeds`, `hostFeed`
-        WHERE `hosts_id` = :Host_id AND `feeds_id` = `feeds`.`id`');
+        WHERE `hosts_id` = :Host_id AND `feeds_id` = `feeds`.`id`'
+      );
       $softwaresHandler->execute(array('Host_id' => $_GET['host']));
       $feedsHandler->execute(array('Host_id' => $_GET['host']));
-      printf ('        <h5>%s (%s)</h5>
+      printf(
+        '        <h5>%s (%s)</h5>
         <h5>Softwares:</h5>
         <ul>%s',
-        $host['ip'], $host['name'], "\n");
+        $host['ip'],
+        $host['name'],
+        "\n"
+      );
       while ($software = $softwaresHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('        <li>%s - %s</li>%s', $software['name'], $software['lastSeen'], "\n");
+        printf('        <li>%s - %s</li>%s', $software['name'], $software['lastSeen'], "\n");
       }
-      printf ('        </ul>
+      printf('        </ul>
         <h5>Feeds:</h5>
         <ul>%s', "\n");
       while ($feed = $feedsHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('        <li>%s - %s</li>%s', $feed['name'], $feed['lastSeen'], "\n");
+        printf('        <li>%s - %s</li>%s', $feed['name'], $feed['lastSeen'], "\n");
       }
-      printf ('        </ul>%s', "\n");
+      printf('        </ul>%s', "\n");
     }
-    printf ('        <hr>%s', "\n");
-
+    printf('        <hr>%s', "\n");
   }
   $hostsHandler = $db->prepare(
     'SELECT `hosts`.`id`, `ip`, `hosts`.`name` AS hName, `softwares`.`name` AS sName, lastSeen
     FROM `hosts`, `softwares`, `hostSoftware`
-    WHERE `hosts_id` = `hosts`.`id` AND `softwares_id` = `softwares`.`id`');
+    WHERE `hosts_id` = `hosts`.`id` AND `softwares_id` = `softwares`.`id`'
+  );
   $hostsHandler->execute();
-  printf ('        <h5>Hosts</h5>
+  printf('        <h5>Hosts</h5>
   <table id="host-table" class="table table-striped table-bordered">
     <thead><tr><th>IP</th><th>Name</th><th>Software</th><th>Last seen</th></tr></thead>%s', "\n");
   while ($host = $hostsHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href="?action=hosts&host=%d">%s</a></td></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
-      $host['id'], $host['ip'], $host['hName'], $host['sName'], $host['lastSeen'], "\n");
+    printf(
+      '          <tr><td><a href="?action=hosts&host=%d">%s</a></td></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
+      $host['id'],
+      $host['ip'],
+      $host['hName'],
+      $host['sName'],
+      $host['lastSeen'],
+      "\n"
+    );
   }
-  printf ('        </table>%s', "\n");
+  printf('        </table>%s', "\n");
 }
 
-function printFeedRow($hostInfo, $feeds) {
+function printFeedRow($hostInfo, $feeds)
+{
   printf('    <tr><td>%s</td>', $hostInfo);
   foreach ($feeds as $feed) {
     printf('<td>%s</td>', $feed ? 'X' : '');
@@ -206,7 +236,8 @@ function printFeedRow($hostInfo, $feeds) {
   print "</tr>\n";
 }
 
-function showFeeds() {
+function showFeeds()
+{
   global $db;
   $feedAgeHandler = $db->prepare('SELECT MIN(`lastSeen`) AS startSeen FROM `hostFeed`');
   $feedsHandler = $db->prepare('SELECT * FROM feeds ORDER BY name');
@@ -214,10 +245,11 @@ function showFeeds() {
     'SELECT `hosts`.`id`, `ip`, `hosts`.`name`, `feeds_id`
     FROM `hosts`, `hostFeed`
     WHERE `hosts_id` = `hosts`.`id`
-    ORDER BY `ip`');
+    ORDER BY `ip`'
+  );
   $feedAgeHandler->execute();
   $feedAge = $feedAgeHandler->fetch(PDO::FETCH_ASSOC);
-  printf ('        <h5>Feeds seen since %s</h5>
+  printf('        <h5>Feeds seen since %s</h5>
   <table id="feed-table" class="table table-striped table-bordered">
     <thead><tr><th>Host</th>', $feedAge['startSeen']);
   $feedsHandler->execute();
@@ -225,9 +257,9 @@ function showFeeds() {
   while ($feed = $feedsHandler->fetch(PDO::FETCH_ASSOC)) {
     $feedArray[$feed['id']] = ++$feedCount;
     $name = str_replace(array('swamid-', '.xml'), '', $feed['name']);
-    printf ('<th>%s</th>', $name);
+    printf('<th>%s</th>', $name);
   }
-  printf ('</tr></thead>%s', "\n");
+  printf('</tr></thead>%s', "\n");
 
   $hostsHandler->execute();
   $oldId = 0;
@@ -252,18 +284,28 @@ function showFeeds() {
   if ($oldId > 0) {
     printFeedRow($hostInfo, $feedListArray);
   }
-  printf ('        </table>%s', "\n");
+  printf('        </table>%s', "\n");
 }
 
 ####
 # Shows menu row
 ####
-function showMenu() {
+function showMenu()
+{
   global $menuActive;
 
   print "\n    ";
-  printf('<a href="?action=hosts"><button type="button" class="btn btn%s-primary">Hosts</button></a>', $menuActive == 'hosts' ? '' : HTML_OUTLINE);
-  printf('<a href="?action=software"><button type="button" class="btn btn%s-primary">Software</button></a>', $menuActive == 'software' ? '' : HTML_OUTLINE);
-  printf('<a href="?action=feeds"><button type="button" class="btn btn%s-primary">Feeds</button></a>', $menuActive == 'feeds' ? '' : HTML_OUTLINE);
+  printf(
+    '<a href="?action=hosts"><button type="button" class="btn btn%s-primary">Hosts</button></a>',
+    $menuActive == 'hosts' ? '' : HTML_OUTLINE
+  );
+  printf(
+    '<a href="?action=software"><button type="button" class="btn btn%s-primary">Software</button></a>',
+    $menuActive == 'software' ? '' : HTML_OUTLINE
+  );
+  printf(
+    '<a href="?action=feeds"><button type="button" class="btn btn%s-primary">Feeds</button></a>',
+    $menuActive == 'feeds' ? '' : HTML_OUTLINE
+  );
   print "\n    <br>\n    <br>\n";
 }

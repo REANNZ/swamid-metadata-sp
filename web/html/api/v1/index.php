@@ -1,4 +1,5 @@
 <?php
+
 //Load composer's autoloader
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -8,7 +9,9 @@ header('Content-type: application/json');
 
 $metaObj = new \stdClass();
 
-$entityHandler = $config->getDb()->prepare('SELECT entityID, publishIn, status FROM Entities WHERE status = 1 AND isIdP = 1 ORDER BY entityID;');
+$entityHandler = $config->getDb()->prepare(
+  'SELECT entityID, publishIn, status FROM Entities WHERE status = 1 AND isIdP = 1 ORDER BY entityID;'
+);
 $entityHandler->execute();
 while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
   $partObj = new \stdClass();

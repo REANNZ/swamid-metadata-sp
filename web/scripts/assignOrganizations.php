@@ -3,7 +3,8 @@
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-function usage() {
+function usage()
+{
   global $argv;
   print "Usage:\n";
   printf("    %s [--dry-run|--help]\n", $argv[0]);
@@ -20,7 +21,7 @@ if ($argc > 1) {
   if ($argc > 2) {
     print "Too many arguments!\n";
     usage();
-    exit (1);
+    exit(1);
   }
   switch ($argv[1]) {
     case '--dry-run':
@@ -28,7 +29,7 @@ if ($argc > 1) {
       break;
     case '--help':
       usage();
-      exit (0);
+      exit(0);
     default:
       printf("Invalid argument: %s\n", $argv[1]);
       usage();
@@ -44,7 +45,9 @@ $org_name = '';
 $orgInfoHandler->bindParam(':Name', $org_name);
 
 // prepare update Entity with OrganizationInfo_id
-$updateEntitiesHandler = $config->getDb()->prepare('UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id;');
+$updateEntitiesHandler = $config->getDb()->prepare(
+  'UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id;'
+);
 $org_id = 0;
 $entity_id = 0;
 $updateEntitiesHandler->bindParam(':OrgId', $org_id);

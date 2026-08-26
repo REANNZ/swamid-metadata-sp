@@ -1,12 +1,13 @@
 <?php
+
 namespace metadata;
 
 /**
  * Class to Parse XML for an Entity into Database
  * Tuakiri specific code
  */
-class ParseXMLTuakiri extends ParseXML {
-
+class ParseXMLTuakiri extends ParseXML
+{
   /**
    * Parse IDPSSODescriptor
    *
@@ -19,7 +20,8 @@ class ParseXMLTuakiri extends ParseXML {
    *
    * @return void
    */
-  protected function parseIDPSSODescriptor($data) {
+  protected function parseIDPSSODescriptor($data)
+  {
     parent::parseIDPSSODescriptor($data);
 
     if (! $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml2']) {
@@ -29,7 +31,7 @@ class ParseXMLTuakiri extends ParseXML {
     }
   }
 
- /**
+  /**
    * Parse SPSSODescriptor
    *
    * Tuakiri version
@@ -42,7 +44,8 @@ class ParseXMLTuakiri extends ParseXML {
    *
    * @return void
    */
-  protected function parseSPSSODescriptor($data) {
+  protected function parseSPSSODescriptor($data)
+  {
     parent::parseSPSSODescriptor($data);
 
     if (! $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml2']) {
@@ -73,15 +76,19 @@ class ParseXMLTuakiri extends ParseXML {
    *
    * @return void
    */
-  protected function checkSAMLEndpoint($data,$type, $saml2, $saml1) {
+  protected function checkSAMLEndpoint($data, $type, $saml2, $saml1)
+  {
     $name = $data->nodeName;
     $binding = $data->getAttribute('Binding');
-    $location =$data->getAttribute('Location');
-    if (substr($location,0,8) <> self::TEXT_HTTPS) {
+    $location = $data->getAttribute('Location');
+    if (substr($location, 0, 8) <> self::TEXT_HTTPS) {
       $this->error .= sprintf(
         "All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
-        $type, $name, htmlspecialchars($binding));
+        $type,
+        $name,
+        htmlspecialchars($binding)
+      );
     }
-    parent::checkSAMLEndpoint($data,$type, $saml2, $saml1);
+    parent::checkSAMLEndpoint($data, $type, $saml2, $saml1);
   }
 }

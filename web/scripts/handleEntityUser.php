@@ -1,4 +1,5 @@
 <?php
+
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
@@ -11,24 +12,25 @@ const BIND_STATUS = ':Status';
 const BIND_REMOVEDATE = ':RemoveDate';
 
 switch ($argc) {
-  case 3 :
+  case 3:
     # UserId as 1:st param
     # entityID as 2:nd
     $user = getUser($argv[1]);
     addAccess($user, $argv[2]);
     break;
-  case 2 :
+  case 2:
     # UserId as 1:st param
     $user = getUser($argv[1]);
     listAccess($user);
     break;
-  default :
+  default:
     # No param list users. Case 1:
     listUsers();
     break;
 }
 
-function listUsers() {
+function listUsers()
+{
   global $config;
   $usersHandler = $config->getDb()->prepare('SELECT `userID`, `fullName` FROM Users ORDER BY `userID`');
   $usersHandler->execute();
@@ -38,35 +40,38 @@ function listUsers() {
   printf("For a list of entities connected to a user :\n   %s <username>\n", __FILE__);
 }
 
-function getUser($userID) {
+function getUser($userID)
+{
   global $config;
   $usersHandler = $config->getDb()->prepare('SELECT `id`, `userID`, `fullName` FROM Users WHERE `userID` = :UserID');
-  $usersHandler->execute(array('UserID'=> $userID));
+  $usersHandler->execute(array('UserID' => $userID));
   if ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
     return $user;
   } else {
-    printf ("User %s is missing!\n", $userID);
+    printf("User %s is missing!\n", $userID);
     exit;
   }
 }
 
-function listAccess(&$user) {
+function listAccess(&$user)
+{
   global $config;
-  printf ("User %s has access to : \n", $user['userID']);
+  printf("User %s has access to : \n", $user['userID']);
   $entitiesAccessHandler = $config->getDb()->prepare("SELECT `entityID`
       FROM EntityUser, Entities
       WHERE EntityUser.`entity_id` = Entities.`id`
         AND EntityUser.`user_id` = :UsersId
         AND `status` = 1
       ORDER BY `entityID`, `status`");
-  $entitiesAccessHandler->execute(array('UsersId'=> $user['id']));
+  $entitiesAccessHandler->execute(array('UsersId' => $user['id']));
   while ($entity = $entitiesAccessHandler->fetch(PDO::FETCH_ASSOC)) {
     printf("%s\n", $entity['entityID']);
   }
   printf("To add access to more entities :\n   %s %s <entityID>\n", __FILE__, $user['userID']);
 }
 
-function addAccess(&$user, $entityID) {
+function addAccess(&$user, $entityID)
+{
   global $config;
   $entitiesHandler = $config->getDb()->prepare("SELECT `id`
     FROM Entities
@@ -84,12 +89,12 @@ function addAccess(&$user, $entityID) {
   if ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     $entitiesAccessHandler->execute(array('UsersId' => $user['id'], 'EntityId' => $entity['id']));
     if ($entitiesAccessHandler->fetch()) {
-      printf ("User %s (%s) already had access to %s.\n", $user['userID'], $user['fullName'], $entityID);
+      printf("User %s (%s) already had access to %s.\n", $user['userID'], $user['fullName'], $entityID);
     } else {
       $entitiesAddAccessHandler->execute(array('UsersId' => $user['id'], 'EntityId' => $entity['id']));
-      printf ("Added %s (%s) to %s.\n", $user['userID'], $user['fullName'], $entityID);
+      printf("Added %s (%s) to %s.\n", $user['userID'], $user['fullName'], $entityID);
     }
   } else {
-    printf ("Entity with entityID %s is missing!\n", $entityID);
+    printf("Entity with entityID %s is missing!\n", $entityID);
   }
 }

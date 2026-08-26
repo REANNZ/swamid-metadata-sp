@@ -1,12 +1,14 @@
 <?php
+
 namespace metadata;
 
 /**
  * A trait to collect common values
  *
  */
-trait CommonTrait {
-  const LANG_CODES = array(
+trait CommonTrait
+{
+  public const LANG_CODES = array(
     'en'  =>  'English',
     'sv'  =>  'Swedish',
     'da'  =>  'Danish',
@@ -193,7 +195,7 @@ trait CommonTrait {
     'zu'  =>  'Zulu',
   );
 
-  const DIGEST_METHODS  = array(
+  public const DIGEST_METHODS  = array(
     # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport-v1.0-cs01.html
     # 2.4 The <alg:DigestMethod> element describes a Message Digest algorithm.
     # Allowed algorithm is listed in https://www.w3.org/TR/xmldsig-core/
@@ -227,7 +229,7 @@ trait CommonTrait {
     #'http://www.w3.org/2001/04/xmlenc#sha384' => 'good',
     'http://www.w3.org/2001/04/xmlenc#ripemd160' => 'good',
   );
-  const SIGNING_METHODS = array(
+  public const SIGNING_METHODS = array(
     # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport-v1.0-cs01.html
     # The <alg:SigningMethod> element describes a Signature or Message Authentication Code algorithm.
     # 6.3 Message Authentication Code
@@ -351,9 +353,10 @@ trait CommonTrait {
     'http://www.w3.org/2021/04/xmldsig-more#eddsa-ed448' => 'good',
     'http://www.w3.org/2021/04/xmldsig-more#eddsa-ed448ph' => 'good',
   );
-  const ENCRYPTION_METHODS = array(
+  public const ENCRYPTION_METHODS = array(
     # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport-v1.0-cs01.html#__RefHeading__5803_234507477
-    # Per [XMLEnc], the <md:EncryptionMethod> element MUST contain an Algorithm attribute containing the identifier for the algorithm defined for use with the specification
+    # Per [XMLEnc], the <md:EncryptionMethod> element MUST contain an Algorithm attribute
+    #    containing the identifier for the algorithm defined for use with the specification
     # 5.1.1 Table of Algorithms
     # https://www.w3.org/TR/xmlenc-core1/#sec-Table-of-Algorithms
     # Block Encryption

@@ -1,4 +1,5 @@
 <?php
+
 //Load composer's autoloader
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
@@ -17,12 +18,14 @@ $organizationHandler = $config->getDb()->prepare(
     WHERE `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
       `lang` = 'en'
     GROUP BY(orgId)
-    ORDER BY `OrganizationDisplayName`;");
+    ORDER BY `OrganizationDisplayName`;"
+);
 $organizationDataHandler = $config->getDb()->prepare(
   'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
     FROM `OrganizationInfoData`
     WHERE `OrganizationInfo_id` = :Id
-    ORDER BY `lang`;');
+    ORDER BY `lang`;'
+);
 
 $organizationHandler->execute();
 while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
