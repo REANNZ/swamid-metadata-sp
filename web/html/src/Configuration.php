@@ -22,7 +22,7 @@ class Configuration
   /**
    * Information for IMPS
    */
-  private array $imps;
+  private array $imps = array();
 
   /**
    * Mode of application
