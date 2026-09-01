@@ -620,7 +620,8 @@ class MetadataEdit extends Common
   private function editIdPErrorURL()
   {
     if (isset($_POST['action']) && isset($_POST['errorURL']) && $_POST['errorURL'] != '') {
-      $errorURLValue = trim(urldecode($_POST['errorURL']));
+      $errorURLValue = trim($_POST['errorURL']);
+
       $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
 
       $update = false;
