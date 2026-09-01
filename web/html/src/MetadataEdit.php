@@ -620,11 +620,7 @@ class MetadataEdit extends Common
   private function editIdPErrorURL()
   {
     if (isset($_POST['action']) && isset($_POST['errorURL']) && $_POST['errorURL'] != '') {
-      $errorURLValue = trim(urldecode($_POST['errorURL']));
-      # space need to be URLencoded before writing to database/xml
-      # https://sp.test.org/my%20info-page should stay in that format
-      # and not be saved as https://sp.test.org/my info-page
-      $errorURLValue = str_replace(' ', '%20', $errorURLValue);
+      $errorURLValue = trim($_POST['errorURL']);
 
       $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
 
