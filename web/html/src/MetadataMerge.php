@@ -260,7 +260,7 @@ class MetadataMerge extends Common
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
       $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
       if ($ssoDescriptor  && $ssoDescriptor->getAttribute('errorURL') == '') {
-        $ssoDescriptor->setAttribute('errorURL', htmlspecialchars($errorURL['URL']));
+        $ssoDescriptor->setAttribute('errorURL', $errorURL['URL']);
         $errorURLUpdateHandler = $this->config->getDb()->prepare(
           "INSERT INTO `EntityURLs` (`entity_id`, `URL`, `type` )
           VALUES (:Id, :URL, 'error')

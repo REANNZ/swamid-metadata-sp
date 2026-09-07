@@ -25,6 +25,10 @@ class ParseXML extends Common
   protected $discoveryResponseFound = false;
   protected $assertionConsumerServiceHTTPRedirectFound = false;
   /**
+   * To check if we have more than one AssertionConsumerService with the same index
+   */
+  protected $assertionConsumerServiceIndexFound = [];
+  /**
    * If subject-id:req already is found in XML
    *
    * In that case we need to create an error
@@ -538,6 +542,7 @@ class ParseXML extends Common
   protected function parseSPSSODescriptor($data)
   {
     $this->assertionConsumerServiceHTTPRedirectFound = false;
+    $this->assertionConsumerServiceIndexFound = [];
     $keyOrder = 0;
     $this->parseProtocolSupportEnumeration($data);
     $saml2found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml2'];
@@ -1605,13 +1610,26 @@ class ParseXML extends Common
    *  of type urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect
    * If so flag this via assertionConsumerServiceHTTPRedirectFound
    *
-   * @param DOMNode $data XML to parse
+   * @param \DOMElement $data XML to parse
    *
    * @return void
    */
   protected function checkAssertionConsumerService($data)
   {
     $binding = $data->getAttribute('Binding');
+    $index = $data->getAttribute('index');
+    if ($index == '') {
+      $this->error .= "Index is Required in SPSSODescriptor->AttributeConsumerService.\n";
+      $index = 0;
+    }
+    if (isset($this->assertionConsumerServiceIndexFound[$index])) {
+      $this->error .= sprintf(
+        "Index need to be uniq in SPSSODescriptor->AttributeConsumerService. Found 2 with index=%s\n",
+        $index
+      );
+    } else {
+      $this->assertionConsumerServiceIndexFound[$index] = true;
+    }
     if ($binding == self::SAML_BINDING_HTTP_REDIRECT) {
       $this->assertionConsumerServiceHTTPRedirectFound = true;
     }
